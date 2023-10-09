@@ -4,6 +4,7 @@
   "version": "0.0.1",
   "description": "为星际公民网站及工具站提供汉化",
   "author": "xkeyC",
+  "default_locale": "zh-CN",
   "icons": {
     "48": "icon.png",
     "128": "icon.png"
