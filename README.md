@@ -7,4 +7,4 @@
 
 
 ## 安装
-下载 zip 后使用插件的开发者共功能手动安装 StarCitizenBoxBrowserEx 文件夹， Chrome 商店 与 Microsoft edge 商店正在审核中。
+下载 zip 后使用插件的开发者功能手动安装 StarCitizenBoxBrowserEx 文件夹， Chrome 商店 与 Microsoft edge 商店正在审核中。
