@@ -5,7 +5,7 @@ function InitWebLocalization() {
     let scriptTimeAgo = document.createElement('script');
     scriptTimeAgo.src = 'https://cdn.bootcdn.net/ajax/libs/timeago.js/4.0.2/timeago.full.min.js';
     document.head.appendChild(scriptTimeAgo);
-    if (typeof $ === 'undefined') {
+    if (window.location.hostname.includes("erkul.games") || window.location.hostname.includes("ccugame.app")) {
         console.log("loading JQ");
         let scriptJquery = document.createElement('script');
         scriptJquery.src = 'https://cdn.bootcdn.net/ajax/libs/jquery/3.5.1/jquery.min.js';
