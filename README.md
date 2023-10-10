@@ -7,4 +7,12 @@
 
 
 ## 安装
-下载 zip 后使用插件的开发者功能手动安装 StarCitizenBoxBrowserEx 文件夹， Chrome 商店 与 Microsoft edge 商店正在审核中。
+
+[Chrome应用商店](https://chrome.google.com/webstore/detail/gocnjckojmledijgmadmacoikibcggja?authuser=0&hl=zh-CN)
+
+Microsoft edge 拓展商店（审核中）
+
+Firefox 拓展商店（审核中）
+
+## 手动安装
+下载 zip 后使用插件的开发者功能手动安装 StarCitizenBoxBrowserEx 文件夹 Firefox 安装 StarCitizenBoxBrowserEx_Firefox 文件夹。
