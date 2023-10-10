@@ -23,12 +23,23 @@
     {
       "matches": [
         "https://robertsspaceindustries.com/*",
+        "https://*.robertsspaceindustries.com/*",
         "https://www.erkul.games/*",
         "https://uexcorp.space/*",
         "https://ccugame.app/*"
       ],
       "js": [
-        "core.js"
+        "core.js",
+        "thirdparty/timeago.full.min.js"
+      ]
+    },
+    {
+      "matches": [
+        "https://www.erkul.games/*",
+        "https://ccugame.app/*"
+      ],
+      "js": [
+        "thirdparty/jquery.min.js"
       ]
     }
   ]

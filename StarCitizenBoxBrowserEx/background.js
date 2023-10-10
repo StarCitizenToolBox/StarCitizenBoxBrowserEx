@@ -86,7 +86,7 @@ async function _initLocalization(url) {
 
 function getLocalizationResource(localizationResource, key) {
     const localizations = [];
-    const dict = localizationResource[key]?.["dict"];
+    const dict = localizationResource[key];
     if (typeof dict === "object") {
         for (const [k, v] of Object.entries(dict)) {
             const trimmedKey = k
@@ -102,7 +102,7 @@ function getLocalizationResource(localizationResource, key) {
 }
 
 async function _getJsonData(fileName, { cacheKey = "", version = null } = {}) {
-    url = "https://ch.citizenwiki.cn/json-files/" + fileName;
+    url = "https://ch.citizenwiki.cn/json-files/locales/" + fileName;
     const box = await getLocalStorage();
     if (cacheKey && cacheKey !== "") {
         const localVersion = await getLocalData(`${cacheKey}_version`);
