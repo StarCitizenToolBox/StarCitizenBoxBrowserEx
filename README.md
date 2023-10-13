@@ -10,11 +10,11 @@
 
 ## 安装
 
-[Chrome应用商店](https://chrome.google.com/webstore/detail/gocnjckojmledijgmadmacoikibcggja?authuser=0&hl=zh-CN)
+[Google Chrome 应用商店](https://chrome.google.com/webstore/detail/gocnjckojmledijgmadmacoikibcggja?authuser=0&hl=zh-CN)
 
-Microsoft edge 拓展商店（审核中）
+[Microsoft Edge 加载项](https://microsoftedge.microsoft.com/addons/detail/lipbbcckldklpdcpfagicipecaacikgi)
 
-[Firefox 拓展商店](https://addons.mozilla.org/zh-CN/firefox/addon/%E6%98%9F%E9%99%85%E5%85%AC%E6%B0%91%E7%9B%92%E5%AD%90%E6%B5%8F%E8%A7%88%E5%99%A8%E6%8B%93%E5%B1%95/)
+[Firefox ADD-ONS](https://addons.mozilla.org/zh-CN/firefox/addon/%E6%98%9F%E9%99%85%E5%85%AC%E6%B0%91%E7%9B%92%E5%AD%90%E6%B5%8F%E8%A7%88%E5%99%A8%E6%8B%93%E5%B1%95/)
 
 ## 手动安装
 下载 zip 后使用插件的开发者功能手动安装 StarCitizenBoxBrowserEx 文件夹 Firefox 安装 StarCitizenBoxBrowserEx_Firefox 文件夹。
