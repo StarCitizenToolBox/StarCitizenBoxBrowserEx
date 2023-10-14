@@ -46,6 +46,9 @@ function WebLocalizationUpdateReplaceWords(w) {
     replaceWords.forEach(({word, replacement}) => {
         SCLocalizationReplaceLocalesMap[word] = replacement;
     });
+    if (window.location.hostname.startsWith("issue-council.robertsspaceindustries.com")) {
+        SCLocalizationReplaceLocalesMap["save"] = "保存";
+    }
     allTranslate().then(_ => {
     });
     // console.log("WebLocalizationUpdateReplaceWords ==" + w)
