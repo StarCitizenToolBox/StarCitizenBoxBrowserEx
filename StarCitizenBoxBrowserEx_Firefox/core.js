@@ -1,4 +1,5 @@
-let replaceLocalesMap = {};
+let SCLocalizationReplaceLocalesMap = {};
+let SCLocalizationEnableSplitMode = false;
 
 function InitWebLocalization() {
     // init script
@@ -22,6 +23,12 @@ function LocalizationWatchUpdate() {
         characterData: true,
         childList: true,
     });
+
+    if (window.location.href.includes("robertsspaceindustries.com")) {
+        console.log("SCLocalizationEnableSplitMode = true");
+        SCLocalizationEnableSplitMode = true;
+    }
+
     if (window.location.hostname.includes("www.erkul.games") || window.location.hostname.includes("ccugame.app")) {
         document.body.addEventListener("click", function (event) {
             setTimeout(function () {
@@ -36,8 +43,8 @@ function WebLocalizationUpdateReplaceWords(w) {
     let replaceWords = w.sort(function (a, b) {
         return b.word.length - a.word.length;
     });
-    replaceWords.forEach(({ word, replacement }) => {
-        replaceLocalesMap[word] = replacement;
+    replaceWords.forEach(({word, replacement}) => {
+        SCLocalizationReplaceLocalesMap[word] = replacement;
     });
     allTranslate().then(_ => {
     });
@@ -47,14 +54,7 @@ function WebLocalizationUpdateReplaceWords(w) {
 async function allTranslate() {
     async function replaceTextNode(node1) {
         if (node1.nodeType === Node.TEXT_NODE) {
-            let nodeValue = node1.nodeValue;
-            const key = nodeValue.trim().toLowerCase()
-                .replace(/\xa0/g, ' ') // replace '&nbsp;'
-                .replace(/\s{2,}/g, ' ');
-            if (replaceLocalesMap[key]) {
-                nodeValue = replaceLocalesMap[key]
-            }
-            node1.nodeValue = nodeValue;
+            node1.nodeValue = GetSCLocalizationTranslateString(node1.nodeValue);
         } else {
             for (let i = 0; i < node1.childNodes.length; i++) {
                 await replaceTextNode(node1.childNodes[i]);
@@ -102,14 +102,7 @@ function translateElement(el) {
     } else {
         k = 'data';
     }
-
-    const txtSrc = el[k].trim();
-    const key = txtSrc.toLowerCase()
-        .replace(/\xa0/g, ' ') // replace '&nbsp;'
-        .replace(/\s{2,}/g, ' ');
-    if (replaceLocalesMap[key]) {
-        el[k] = el[k].replace(txtSrc, replaceLocalesMap[key])
-    }
+    el[k] = GetSCLocalizationTranslateString(el[k]);
 }
 
 function translateRelativeTimeEl(el) {
@@ -140,10 +133,44 @@ function shouldTranslateEl(el) {
     return true;
 }
 
+function GetSCLocalizationTranslateString(txtSrc) {
+    const key = txtSrc.toLowerCase().replace(/\xa0/g, ' ').replace(/\s{2,}/g, ' ').trim();
+    const sourceKey = txtSrc.replace(/\xa0/g, ' ').replace(/\s{2,}/g, ' ').trim();
+    let noTheKey = key.replace("the ", "");
+    let noHorizontalKey = key.replace("- ", "");
+
+    if (SCLocalizationReplaceLocalesMap[key]) {
+        txtSrc = SCLocalizationReplaceLocalesMap[key]
+    } else if (SCLocalizationEnableSplitMode) {
+        if (sourceKey.includes(" - ")) {
+            let nodeValue = txtSrc
+            sourceKey.split(" - ").forEach(function (splitKey) {
+                if (SCLocalizationReplaceLocalesMap[splitKey.toLowerCase()]) {
+                    nodeValue = nodeValue.replace(splitKey, SCLocalizationReplaceLocalesMap[splitKey.toLowerCase()])
+                } else {
+                    nodeValue = nodeValue.replace(splitKey, GetSCLocalizationTranslateString(splitKey))
+                }
+            });
+            txtSrc = nodeValue
+        } else if (key.includes("starter pack") || key.includes("starter package")) {
+            let shipName = key.replace("starter package", "").replace("starter pack", "").trim()
+            if (SCLocalizationReplaceLocalesMap[shipName.toLowerCase()]) {
+                shipName = SCLocalizationReplaceLocalesMap[shipName.toLowerCase()];
+            }
+            txtSrc = shipName + " 新手包";
+        } else if (key.startsWith("the ") && SCLocalizationReplaceLocalesMap[noTheKey]) {
+            txtSrc = SCLocalizationReplaceLocalesMap[noTheKey];
+        } else if (key.startsWith("- ") && SCLocalizationReplaceLocalesMap[noHorizontalKey]) {
+            txtSrc = "- "+SCLocalizationReplaceLocalesMap[noHorizontalKey];
+        }
+    }
+    return txtSrc
+}
+
 InitWebLocalization();
 
 function _loadLocalizationData() {
-    chrome.runtime.sendMessage({ action: "_loadLocalizationData", url: window.location.href }, function (response) {
+    chrome.runtime.sendMessage({action: "_loadLocalizationData", url: window.location.href}, function (response) {
         WebLocalizationUpdateReplaceWords(response.result);
     });
 }
