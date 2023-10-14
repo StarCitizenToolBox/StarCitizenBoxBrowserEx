@@ -152,7 +152,7 @@ function GetSCLocalizationTranslateString(txtSrc) {
                 }
             });
             txtSrc = nodeValue
-        } else if (key.includes("starter pack") || key.includes("starter package")) {
+        } else if (key.endsWith("starter pack") || key.endsWith("starter package")) {
             let shipName = key.replace("starter package", "").replace("starter pack", "").trim()
             if (SCLocalizationReplaceLocalesMap[shipName.toLowerCase()]) {
                 shipName = SCLocalizationReplaceLocalesMap[shipName.toLowerCase()];
