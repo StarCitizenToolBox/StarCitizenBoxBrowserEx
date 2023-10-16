@@ -12,7 +12,7 @@
 
 [Google Chrome 应用商店](https://chrome.google.com/webstore/detail/gocnjckojmledijgmadmacoikibcggja?authuser=0&hl=zh-CN)
 
-[Microsoft Edge 加载项](https://microsoftedge.microsoft.com/addons/detail/lipbbcckldklpdcpfagicipecaacikgi)
+[Microsoft Edge 加载项（因微软审核较慢，可能存在版本滞后，推荐优先使用 Chrome 源）](https://microsoftedge.microsoft.com/addons/detail/lipbbcckldklpdcpfagicipecaacikgi)
 
 [Firefox ADD-ONS](https://addons.mozilla.org/zh-CN/firefox/addon/%E6%98%9F%E9%99%85%E5%85%AC%E6%B0%91%E7%9B%92%E5%AD%90%E6%B5%8F%E8%A7%88%E5%99%A8%E6%8B%93%E5%B1%95/)
 
