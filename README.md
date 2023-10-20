@@ -3,6 +3,8 @@
 为您将星际公民官网及常用工具网站翻译为中文的浏览器拓展，所有翻译内容来自 星际公民中文社区汉化组。
 本插件也内置于 [星际公民盒子](https://github.com/xkeyC/StarCitizenToolBox) 。
 
+SC官网翻译项目：https://github.com/CxJuice/ScWeb_Chinese_Translate
+
 ## 本插件仅供大致浏览使用，不对任何有关本插件产生的问题负责！在涉及账号操作前请注意确认网站的原本内容！
 
 <img width="640" alt="8b9bdcc6d352639fd134df61e6e702ef" src="https://github.com/xkeyC/StarCitizenBoxBrowserEx/assets/39891083/9580f52a-13ea-4234-a0d3-b8d06f06dda2">
