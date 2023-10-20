@@ -71,6 +71,7 @@ async function _initLocalization(url) {
         }
 
         if (url.startsWith(concierge)) {
+            replaceWords = [];
             addLocalizationResource("concierge");
         }
 
