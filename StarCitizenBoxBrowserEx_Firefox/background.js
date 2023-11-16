@@ -104,7 +104,6 @@ function getLocalizationResource(localizationResource, key) {
 
 async function _getJsonData(fileName, { cacheKey = "", version = null } = {}) {
     url = "https://ch.citizenwiki.cn/json-files/locales/" + fileName;
-    const box = await getLocalStorage();
     if (cacheKey && cacheKey !== "") {
         const localVersion = await getLocalData(`${cacheKey}_version`);
         const data = await getLocalData(cacheKey);
@@ -122,14 +121,6 @@ async function _getJsonData(fileName, { cacheKey = "", version = null } = {}) {
         await setLocalData(`${cacheKey}_version`, version);
     }
     return data;
-}
-
-
-function getLocalStorage() {
-    return new Promise((resolve) => {
-        chrome.storage.local;
-        resolve();
-    });
 }
 
 function getLocalData(key) {

@@ -25,8 +25,7 @@
         "https://robertsspaceindustries.com/*",
         "https://*.robertsspaceindustries.com/*",
         "https://www.erkul.games/*",
-        "https://uexcorp.space/*",
-        "https://ccugame.app/*"
+        "https://uexcorp.space/*"
       ],
       "js": [
         "core.js",
@@ -35,8 +34,7 @@
     },
     {
       "matches": [
-        "https://www.erkul.games/*",
-        "https://ccugame.app/*"
+        "https://www.erkul.games/*"
       ],
       "js": [
         "thirdparty/jquery.min.js"
