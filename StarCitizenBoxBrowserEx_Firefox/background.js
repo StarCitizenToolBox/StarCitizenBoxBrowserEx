@@ -29,18 +29,20 @@ async function _initLocalization(url) {
     let v = dataVersion
     // TODO check version
     let data = {};
-    data["zh-CN"] = await _getJsonData("zh-CN-rsi.json", { cacheKey: "zh-CN", version: v.rsi });
 
     if (url.includes("robertsspaceindustries.com")) {
+        data["zh-CN"] = await _getJsonData("zh-CN-rsi.json", { cacheKey: "zh-CN", version: v.rsi });
         data["concierge"] = await _getJsonData("concierge.json", { cacheKey: "concierge", version: v.concierge });
         data["orgs"] = await _getJsonData("orgs.json", v.orgs);
         data["address"] = await _getJsonData("addresses.json", { cacheKey: "orgs", version: v.addresses });
         data["hangar"] = await _getJsonData("hangar.json", { cacheKey: "hangar", version: v.hangar });
-    } else {
+    } else if (url.includes("uexcorp.space")) {
         data["UEX"] = await _getJsonData("zh-CN-uex.json", { cacheKey: "uex", version: v.uex });
+    } else if (url.includes("erkul.games")) {
+        data["DPS"] = await _getJsonData("zh-CN-dps.json", { cacheKey: "dps", version: "0.0" });
     }
     // update data
-    let replaceWords = getLocalizationResource(data, "zh-CN");
+    let replaceWords = [];
 
     function addLocalizationResource(key) {
         replaceWords.push(...getLocalizationResource(data, key));
@@ -54,6 +56,7 @@ async function _initLocalization(url) {
         const referral = "https://robertsspaceindustries.com/account/referral-program";
         const address = "https://robertsspaceindustries.com/account/addresses";
         const hangar = "https://robertsspaceindustries.com/account/pledges";
+        addLocalizationResource("zh-CN");
         if (url.startsWith(org) || url.startsWith(citizens) || url.startsWith(organization)) {
             replaceWords.push({ "word": 'members', "replacement": '名成员' });
             addLocalizationResource("orgs");
@@ -78,8 +81,10 @@ async function _initLocalization(url) {
         if (url.startsWith(hangar)) {
             addLocalizationResource("hangar");
         }
-    } else {
+    } else if (url.includes("uexcorp.space")) {
         addLocalizationResource("UEX");
+    } else if (url.includes("erkul.games")) {
+        addLocalizationResource("DPS");
     }
     return replaceWords;
 }
