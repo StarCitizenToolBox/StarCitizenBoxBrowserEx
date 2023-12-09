@@ -39,7 +39,7 @@ async function _initLocalization(url) {
     } else if (url.includes("uexcorp.space")) {
         data["UEX"] = await _getJsonData("zh-CN-uex.json", { cacheKey: "uex", version: v.uex });
     } else if (url.includes("erkul.games")) {
-        data["DPS"] = await _getJsonData("zh-CN-dps.json", { cacheKey: "dps", version: "0.0" });
+        data["DPS"] = await _getJsonData("zh-CN-dps.json", { cacheKey: "dps", version: v.dps });
     }
     // update data
     let replaceWords = [];
