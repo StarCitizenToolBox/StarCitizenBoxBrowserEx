@@ -8,7 +8,7 @@
     "192": "icon.png"
   },
   "host_permissions": [
-    "*://ch.citizenwiki.cn/"
+    "*://git.sctoolbox.sccsgo.com/"
   ],
   "permissions": [
     "storage"

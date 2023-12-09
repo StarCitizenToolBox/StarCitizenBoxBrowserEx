@@ -108,7 +108,7 @@ function getLocalizationResource(localizationResource, key) {
 }
 
 async function _getJsonData(fileName, { cacheKey = "", version = null } = {}) {
-    url = "https://ch.citizenwiki.cn/json-files/locales/" + fileName;
+    url = "https://git.sctoolbox.sccsgo.com/SCToolBox/ScWeb_Chinese_Translate/raw/branch/main/json/locales/" + fileName;
     if (cacheKey && cacheKey !== "") {
         const localVersion = await getLocalData(`${cacheKey}_version`);
         const data = await getLocalData(cacheKey);
