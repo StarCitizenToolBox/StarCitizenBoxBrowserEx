@@ -1,14 +1,15 @@
 let dataVersion = null
 
 chrome.runtime.onInstalled.addListener(function () {
-    _checkVersion().then(_ => { });
+    _checkVersion().then(_ => {
+    });
     console.log("SWTT init");
 });
 
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
     if (request.action === "_loadLocalizationData") {
         _initLocalization(request.url).then(data => {
-            sendResponse({ result: data });
+            sendResponse({result: data});
         });
         return true;
     }
@@ -31,15 +32,15 @@ async function _initLocalization(url) {
     let data = {};
 
     if (url.includes("robertsspaceindustries.com")) {
-        data["zh-CN"] = await _getJsonData("zh-CN-rsi.json", { cacheKey: "zh-CN", version: v.rsi });
-        data["concierge"] = await _getJsonData("concierge.json", { cacheKey: "concierge", version: v.concierge });
+        data["zh-CN"] = await _getJsonData("zh-CN-rsi.json", {cacheKey: "zh-CN", version: v.rsi});
+        data["concierge"] = await _getJsonData("concierge.json", {cacheKey: "concierge", version: v.concierge});
         data["orgs"] = await _getJsonData("orgs.json", v.orgs);
-        data["address"] = await _getJsonData("addresses.json", { cacheKey: "orgs", version: v.addresses });
-        data["hangar"] = await _getJsonData("hangar.json", { cacheKey: "hangar", version: v.hangar });
+        data["address"] = await _getJsonData("addresses.json", {cacheKey: "orgs", version: v.addresses});
+        data["hangar"] = await _getJsonData("hangar.json", {cacheKey: "hangar", version: v.hangar});
     } else if (url.includes("uexcorp.space")) {
-        data["UEX"] = await _getJsonData("zh-CN-uex.json", { cacheKey: "uex", version: v.uex });
+        data["UEX"] = await _getJsonData("zh-CN-uex.json", {cacheKey: "uex", version: v.uex});
     } else if (url.includes("erkul.games")) {
-        data["DPS"] = await _getJsonData("zh-CN-dps.json", { cacheKey: "dps", version: v.dps });
+        data["DPS"] = await _getJsonData("zh-CN-dps.json", {cacheKey: "dps", version: v.dps});
     }
     // update data
     let replaceWords = [];
@@ -56,9 +57,13 @@ async function _initLocalization(url) {
         const referral = "https://robertsspaceindustries.com/account/referral-program";
         const address = "https://robertsspaceindustries.com/account/addresses";
         const hangar = "https://robertsspaceindustries.com/account/pledges";
+        const spectrum = "https://robertsspaceindustries.com/spectrum/community/";
+        if (url.startsWith(spectrum)) {
+            return;
+        }
         addLocalizationResource("zh-CN");
         if (url.startsWith(org) || url.startsWith(citizens) || url.startsWith(organization)) {
-            replaceWords.push({ "word": 'members', "replacement": '名成员' });
+            replaceWords.push({"word": 'members', "replacement": '名成员'});
             addLocalizationResource("orgs");
         }
         if (url.startsWith(address)) {
@@ -67,9 +72,9 @@ async function _initLocalization(url) {
 
         if (url.startsWith(referral)) {
             replaceWords.push(
-                { "word": 'Total recruits: ', "replacement": '总邀请数：' },
-                { "word": 'Prospects ', "replacement": '未完成的邀请' },
-                { "word": 'Recruits', "replacement": '已完成的邀请' }
+                {"word": 'Total recruits: ', "replacement": '总邀请数：'},
+                {"word": 'Prospects ', "replacement": '未完成的邀请'},
+                {"word": 'Recruits', "replacement": '已完成的邀请'}
             );
         }
 
@@ -101,13 +106,13 @@ function getLocalizationResource(localizationResource, key) {
                 .toLowerCase()
                 .replace(/\xa0/g, ' ')
                 .replace(/\s{2,}/g, ' ');
-            localizations.push({ "word": trimmedKey, "replacement": v.toString() });
+            localizations.push({"word": trimmedKey, "replacement": v.toString()});
         }
     }
     return localizations;
 }
 
-async function _getJsonData(fileName, { cacheKey = "", version = null } = {}) {
+async function _getJsonData(fileName, {cacheKey = "", version = null} = {}) {
     url = "https://git.sctoolbox.sccsgo.com/SCToolBox/ScWeb_Chinese_Translate/raw/branch/main/json/locales/" + fileName;
     if (cacheKey && cacheKey !== "") {
         const localVersion = await getLocalData(`${cacheKey}_version`);
@@ -117,7 +122,7 @@ async function _getJsonData(fileName, { cacheKey = "", version = null } = {}) {
         }
     }
     const startTime = new Date();
-    const response = await fetch(url, { method: 'GET', mode: 'cors' });
+    const response = await fetch(url, {method: 'GET', mode: 'cors'});
     const endTime = new Date();
     const data = await response.json();
     if (cacheKey && cacheKey !== "") {
