@@ -8,7 +8,7 @@
     "192": "icon.png"
   },
   "host_permissions": [
-    "*://git.sctoolbox.sccsgo.com/"
+    "https://git.scbox.xkeyc.cn/*"
   ],
   "permissions": [
     "storage"
