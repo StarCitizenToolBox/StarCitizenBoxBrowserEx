@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "星际公民盒子浏览器拓展",
-  "version": "0.0.9",
+  "version": "0.0.10",
   "description": "为星际公民网站及工具站提供汉化",
   "author": "xkeyC",
   "icons": {
@@ -27,6 +27,9 @@
         "https://*.robertsspaceindustries.com/*",
         "https://www.erkul.games/*",
         "https://uexcorp.space/*"
+      ],
+      "exclude_matches": [
+        "https://robertsspaceindustries.com/spectrum/*"
       ],
       "js": [
         "core.js",
