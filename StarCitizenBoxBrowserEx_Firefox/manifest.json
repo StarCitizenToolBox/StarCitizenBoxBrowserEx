@@ -43,6 +43,15 @@
       "js": [
         "thirdparty/jquery.min.js"
       ]
+    },
+    {
+      "matches": [
+        "https://robertsspaceindustries.com/*"
+      ],
+      "js": [
+        "rsi_hangar_fix.js"
+      ],
+      "run_at": "document_idle"
     }
   ]
 }
