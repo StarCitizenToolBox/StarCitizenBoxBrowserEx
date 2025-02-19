@@ -1,4 +1,4 @@
-// form https://github.com/cfdxkk/RSI-Hangar-Button
+// from https://github.com/cfdxkk/RSI-Hangar-Button
 // LICENSE  GLWT(Good Luck With That) Public License
 (function () {
     /**
