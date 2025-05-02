@@ -31,7 +31,7 @@ async function _initLocalization(url) {
     // TODO check version
     let data = {};
 
-    if (url.includes("robertsspaceindustries.com")) {
+    if (url.includes("robertsspaceindustries.com") || url.includes("manual")) {
         data["zh-CN"] = await _getJsonData("zh-CN-rsi.json", {cacheKey: "zh-CN", version: v.rsi});
         data["concierge"] = await _getJsonData("concierge.json", {cacheKey: "concierge", version: v.concierge});
         data["orgs"] = await _getJsonData("orgs.json", v.orgs);
@@ -49,7 +49,7 @@ async function _initLocalization(url) {
         replaceWords.push(...getLocalizationResource(data, key));
     }
 
-    if (url.includes("robertsspaceindustries.com")) {
+    if (url.includes("robertsspaceindustries.com") || url.includes("manual")) {
         const org = "https://robertsspaceindustries.com/orgs";
         const citizens = "https://robertsspaceindustries.com/citizens";
         const organization = "https://robertsspaceindustries.com/account/organization";

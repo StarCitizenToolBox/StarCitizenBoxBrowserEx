@@ -25,12 +25,14 @@
         "https://robertsspaceindustries.com/*",
         "https://*.robertsspaceindustries.com/*",
         "https://www.erkul.games/*",
-        "https://uexcorp.space/*"
+        "https://uexcorp.space/*",
+        "*://*/*"
       ],
       "exclude_matches": [
         "https://robertsspaceindustries.com/spectrum/*"
       ],
       "js": [
+        "content.js",
         "core.js",
         "thirdparty/timeago.full.min.js"
       ]
@@ -51,6 +53,12 @@
         "rsi_hangar_fix.js"
       ],
       "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["injected.js"],
+      "matches": ["<all_urls>"]
     }
   ]
 }
