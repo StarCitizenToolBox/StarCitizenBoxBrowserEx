@@ -44,3 +44,5 @@ window.addEventListener('message', async (event) => {
     response
   }, '*');
 }); 
+
+window.postMessage({ type: 'SC-BOX-TRANSLATE-API-AVAILABLE' }, '*');
