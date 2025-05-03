@@ -32,7 +32,6 @@
         "https://robertsspaceindustries.com/spectrum/*"
       ],
       "js": [
-        "content.js",
         "core.js",
         "thirdparty/timeago.full.min.js"
       ]
