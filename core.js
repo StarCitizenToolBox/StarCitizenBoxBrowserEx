@@ -64,7 +64,8 @@ async function allTranslate() {
             
             // 只有当文本发生变化时才保存原始文本
             if (originalText !== translatedText) {
-                parentNode.setAttribute('data-original-value', originalText);
+                const originalValue = parentNode.getAttribute('data-original-value') || "";
+                parentNode.setAttribute('data-original-value', originalValue + originalText);
                 node.nodeValue = translatedText;
             }
         } else {
@@ -134,6 +135,7 @@ function traverseElement(el) {
 function translateElement(el, parentNode) {
     // Get the text field name
     let k;
+    let translatedText;
     if (el.tagName === "INPUT") {
         if (el.type === 'button' || el.type === 'submit') {
             k = 'value';
@@ -141,12 +143,21 @@ function translateElement(el, parentNode) {
             k = 'placeholder';
         }
 
-        el.setAttribute('data-original-value', el[k]);
+        translatedText = GetSCLocalizationTranslateString(el[k]);
+        if (el[k] === translatedText) return;
+
+        const originalValue = parentNode.getAttribute('data-original-value') || "";
+        el.setAttribute('data-original-value', originalValue + el[k]);
     } else {
         k = 'data';
-        parentNode.setAttribute('data-original-value', el[k]);
+
+        translatedText = GetSCLocalizationTranslateString(el[k]);
+        if (el[k] === translatedText) return;
+
+        const originalValue = parentNode.getAttribute('data-original-value') || "";
+        parentNode.setAttribute('data-original-value', originalValue + el[k]);
     }
-    el[k] = GetSCLocalizationTranslateString(el[k]);
+    el[k] = translatedText;
 }
 
 function translateRelativeTimeEl(el) {
