@@ -21,15 +21,54 @@ SC网站翻译项目：[CxJuice/ScWeb_Chinese_Translate](https://github.com/CxJu
 
 下载 zip 后使用插件的开发者功能手动安装 dist/chrome 文件夹 Firefox 安装 dist/firefox 文件夹。
 
-### 开发
+### 开发者
 
-#### 安装依赖
+#### 调用翻译Hook
+
+```tsx
+  const [translateApiAvailable, setTranslateApiAvailable] = useState(false);
+
+  useEffect(() => {
+    // 在插件加载后会向页面发送消息
+    function handleMessage(event: MessageEvent) {
+      if (event.source !== window) return;
+      if (event.data?.type === 'SC-BOX-TRANSLATE-API-AVAILABLE') {
+        // 你也可以在此直接执行触发翻译操作
+        console.log('translateApiAvailable', event.data);
+        setTranslateApiAvailable(true);
+      }
+    }
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
+```
+
+```ts
+  // 触发翻译
+  window.postMessage({ 
+    type: 'SC_TRANSLATE_REQUEST', 
+    action: 'translate', 
+    requestId: Math.random().toString(36)
+  }, '*');
+
+  // 撤销翻译
+  window.postMessage({ 
+    type: 'SC_TRANSLATE_REQUEST', 
+    action: 'undoTranslate', 
+    requestId: Math.random().toString(36)
+  }, '*');
+```
+
+#### 开发/调试
+
+##### 安装依赖
 
 ```bash
 pnpm install
 ```
 
-#### 开发模式
+##### 开发模式
 
 此命令在开发模式下运行您的扩展程序。它将启动一个新的浏览器实例，加载您的扩展程序。每当您对代码进行更改时，页面将自动重新加载，从而提供流畅的开发体验。
 
@@ -39,7 +78,7 @@ pnpm dev
 pnpm dev:firefox
 ```
 
-#### 编译
+##### 编译
 
 此命令用于为生产环境构建您的扩展程序。它会优化和打包您的扩展程序，准备好部署到目标浏览器的商店。
 
