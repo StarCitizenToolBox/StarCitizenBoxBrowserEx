@@ -152,10 +152,12 @@ function setLocalData(key, data) {
     });
 }
 
-chrome.contextMenus.create({
-    id: "translate",
-    title: "翻译本页面",
-    contexts: ["page"]
+chrome.runtime.onInstalled.addListener(function () {
+    chrome.contextMenus.create({
+        id: "translate",
+        title: "翻译本页面",
+        contexts: ["page"]
+    });
 });
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
