@@ -193,6 +193,13 @@ function _loadLocalizationData() {
     });
 }
 
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    if (request.action === "_initTranslation") {
+        SCLocalizationEnableSplitMode = true;
+        WebLocalizationUpdateReplaceWords(request.data);
+    }
+});
+
 // 注入脚本到网页上下文
 const script = document.createElement('script');
 script.src = chrome.runtime.getURL('injected.js');

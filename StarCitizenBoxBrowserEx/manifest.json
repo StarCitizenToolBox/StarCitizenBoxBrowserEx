@@ -5,13 +5,16 @@
   "description": "为星际公民网站及工具站提供汉化",
   "author": "xkeyC",
   "icons": {
+    "16": "icon.png",
+    "48": "icon.png",
     "192": "icon.png"
   },
   "host_permissions": [
     "https://git.scbox.xkeyc.cn/*"
   ],
   "permissions": [
-    "storage"
+    "storage",
+    "contextMenus"
   ],
   "action": {
     "default_popup": "popup.html"
@@ -22,10 +25,6 @@
   "content_scripts": [
     {
       "matches": [
-        "https://robertsspaceindustries.com/*",
-        "https://*.robertsspaceindustries.com/*",
-        "https://www.erkul.games/*",
-        "https://uexcorp.space/*",
         "*://*/*"
       ],
       "exclude_matches": [

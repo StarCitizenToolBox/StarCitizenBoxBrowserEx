@@ -151,3 +151,16 @@ function setLocalData(key, data) {
         });
     });
 }
+
+chrome.contextMenus.create({
+    id: "translate",
+    title: "翻译本页面",
+    contexts: ["page"]
+});
+
+chrome.contextMenus.onClicked.addListener((info, tab) => {
+    console.log("contextMenus", info, tab);
+    _initLocalization("manual").then(data => {
+        chrome.tabs.sendMessage(tab.id, {action: "_initTranslation", data});
+    });
+});
