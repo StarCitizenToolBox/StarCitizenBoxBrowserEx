@@ -101,6 +101,8 @@ async function undoTranslate(): Promise<{success: boolean}> {
         }
     });
     
+    window.postMessage({ type: 'TOGGLED-SC-BOX-TRANSLATE', action: 'off' }, '*');
+    
     return Promise.resolve({ success: true });
 }
 
@@ -255,13 +257,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         if (SCLocalizationTranslating) {
             SCLocalizationTranslating = false;
             undoTranslate();
-            window.postMessage({ type: 'TOGGLED-SC-BOX-TRANSLATE', action: 'off' }, '*');
             return;
         }
         SCLocalizationTranslating = true;
         SCLocalizationEnableSplitMode = true;
-        WebLocalizationUpdateReplaceWords(request.data);
         window.postMessage({ type: 'TOGGLED-SC-BOX-TRANSLATE', action: 'on' }, '*');
+        WebLocalizationUpdateReplaceWords(request.data);
     }
 });
 
@@ -277,6 +278,7 @@ window.addEventListener('message', async (event) => {
             SCLocalizationEnableSplitMode = true;
             chrome.runtime.sendMessage({ action: "_loadLocalizationData", url: "manual" }, function (response) {
                 SCLocalizationTranslating = true;
+                window.postMessage({ type: 'TOGGLED-SC-BOX-TRANSLATE', action: 'on' }, '*');
                 WebLocalizationUpdateReplaceWords(response.result);
             });
             response = { success: true };

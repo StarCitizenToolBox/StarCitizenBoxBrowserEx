@@ -5,7 +5,7 @@
 
 SC网站翻译项目：[CxJuice/ScWeb_Chinese_Translate](https://github.com/CxJuice/ScWeb_Chinese_Translate)
 
-## 本插件仅供大致浏览使用，不对任何有关本插件产生的问题负责！在涉及账号操作前请注意确认网站的原本内容！
+## **本插件仅供大致浏览使用，不对任何有关本插件产生的问题负责！在涉及账号操作前请注意确认网站的原本内容！**
 
 ![img](https://github.com/xkeyC/StarCitizenBoxBrowserEx/assets/39891083/9580f52a-13ea-4234-a0d3-b8d06f06dda2)
 
@@ -26,16 +26,31 @@ SC网站翻译项目：[CxJuice/ScWeb_Chinese_Translate](https://github.com/CxJu
 #### 调用翻译Hook
 
 ```tsx
-  const [translateApiAvailable, setTranslateApiAvailable] = useState(false);
+  enum SCBoxTranslateStatus {
+    Available,
+    Translated,
+    NotAvailable,
+  }
+
+  const [translateApiAvailable, setTranslateApiAvailable] = useState<SCBoxTranslateStatus>(SCBoxTranslateStatus.NotAvailable);
 
   useEffect(() => {
-    // 在插件加载后会向页面发送消息
     function handleMessage(event: MessageEvent) {
       if (event.source !== window) return;
+      // 在插件加载后会向页面发送消息
       if (event.data?.type === 'SC-BOX-TRANSLATE-API-AVAILABLE') {
-        // 你也可以在此直接执行触发翻译操作
-        console.log('translateApiAvailable', event.data);
-        setTranslateApiAvailable(true);
+        setTranslateApiAvailable(SCBoxTranslateStatus.Available);
+      }
+      // 在翻译状态改变时插件也会向页面发送消息
+      if (event.data?.type === 'TOGGLED-SC-BOX-TRANSLATE') {
+        switch (event.data.action) {
+          case 'on':
+            setTranslateApiAvailable(SCBoxTranslateStatus.Translated);
+            return;
+          case 'off':
+            setTranslateApiAvailable(SCBoxTranslateStatus.Available);
+            return;
+        }
       }
     }
 
