@@ -255,11 +255,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         if (SCLocalizationTranslating) {
             SCLocalizationTranslating = false;
             undoTranslate();
+            window.postMessage({ type: 'TOGGLED-SC-BOX-TRANSLATE', action: 'off' }, '*');
             return;
         }
         SCLocalizationTranslating = true;
         SCLocalizationEnableSplitMode = true;
         WebLocalizationUpdateReplaceWords(request.data);
+        window.postMessage({ type: 'TOGGLED-SC-BOX-TRANSLATE', action: 'on' }, '*');
     }
 });
 
