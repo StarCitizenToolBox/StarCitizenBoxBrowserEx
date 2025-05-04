@@ -1,5 +1,6 @@
 let SCLocalizationReplaceLocalesMap = {};
 let SCLocalizationEnableSplitMode = false;
+let SCLocalizationTranslating = false;
 
 function InitWebLocalization() {
     // init script
@@ -25,7 +26,6 @@ function LocalizationWatchUpdate() {
     });
 
     if (window.location.href.includes("robertsspaceindustries.com")) {
-        console.log("SCLocalizationEnableSplitMode = true");
         SCLocalizationEnableSplitMode = true;
     }
 
@@ -51,16 +51,25 @@ function WebLocalizationUpdateReplaceWords(w) {
     }
     allTranslate().then(_ => {
     });
-    // console.log("WebLocalizationUpdateReplaceWords ==" + w)
 }
 
 async function allTranslate() {
-    async function replaceTextNode(node1) {
-        if (node1.nodeType === Node.TEXT_NODE) {
-            node1.nodeValue = GetSCLocalizationTranslateString(node1.nodeValue);
+    SCLocalizationTranslating = true;
+
+    async function replaceTextNode(node, parentNode) {
+        if (node.nodeType === Node.TEXT_NODE) {
+            // 保存原始文本内容
+            const originalText = node.nodeValue;
+            const translatedText = GetSCLocalizationTranslateString(originalText);
+            
+            // 只有当文本发生变化时才保存原始文本
+            if (originalText !== translatedText) {
+                parentNode.setAttribute('data-original-value', originalText);
+                node.nodeValue = translatedText;
+            }
         } else {
-            for (let i = 0; i < node1.childNodes.length; i++) {
-                await replaceTextNode(node1.childNodes[i]);
+            for (let i = 0; i < node.childNodes.length; i++) {
+                await replaceTextNode(node.childNodes[i], node);
             }
         }
     }
@@ -68,7 +77,36 @@ async function allTranslate() {
     await replaceTextNode(document.body);
 }
 
+async function undoTranslate() {
+    SCLocalizationTranslating = false;
+
+    document.querySelectorAll('*[data-original-value]').forEach(element => {
+        element.innerText = element.getAttribute('data-original-value');
+        element.removeAttribute('data-original-value');
+    });
+
+    // 处理输入元素
+    const inputElements = document.querySelectorAll('input[type="button"], input[type="submit"], input[type="text"], input[type="password"]');
+    inputElements.forEach(el => {
+        // 尝试从 data-original-value 属性恢复原始值
+        if (el.hasAttribute('data-original-value')) {
+            if (el.type === 'button' || el.type === 'submit') {
+                el.value = el.getAttribute('data-original-value');
+            } else {
+                el.placeholder = el.getAttribute('data-original-value');
+            }
+            el.removeAttribute('data-original-value');
+        }
+    });
+    
+    return { success: true };
+}
+
 function traverseElement(el) {
+    if (!SCLocalizationTranslating) {
+        return;
+    }
+
     if (!shouldTranslateEl(el)) {
         return
     }
@@ -80,12 +118,12 @@ function traverseElement(el) {
         }
 
         if (child.nodeType === Node.TEXT_NODE) {
-            translateElement(child);
+            translateElement(child, el);
         } else if (child.nodeType === Node.ELEMENT_NODE) {
             if (child.tagName === "INPUT") {
-                translateElement(child);
+                translateElement(child, el);
             } else {
-                traverseElement(child);
+                traverseElement(child, el);
             }
         } else {
             // pass
@@ -93,7 +131,7 @@ function traverseElement(el) {
     }
 }
 
-function translateElement(el) {
+function translateElement(el, parentNode) {
     // Get the text field name
     let k;
     if (el.tagName === "INPUT") {
@@ -102,8 +140,11 @@ function translateElement(el) {
         } else {
             k = 'placeholder';
         }
+
+        el.setAttribute('data-original-value', el[k]);
     } else {
         k = 'data';
+        parentNode.setAttribute('data-original-value', el[k]);
     }
     el[k] = GetSCLocalizationTranslateString(el[k]);
 }
@@ -189,23 +230,26 @@ InitWebLocalization();
 
 function _loadLocalizationData() {
     chrome.runtime.sendMessage({ action: "_loadLocalizationData", url: window.location.href }, function (response) {
-        console.log("response ==" + JSON.stringify(response));
         WebLocalizationUpdateReplaceWords(response.result);
     });
 }
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    if (request.action === "_initTranslation") {
+    if (request.action === "_toggleTranslation") {
+        if (SCLocalizationTranslating) {
+            SCLocalizationTranslating = false;
+            undoTranslate();
+            return;
+        }
         SCLocalizationEnableSplitMode = true;
         WebLocalizationUpdateReplaceWords(request.data);
     }
 });
 
 window.addEventListener('message', async (event) => {
-    console.log(event)
     if (event.source !== window || !event.data || event.data.type !== 'SC_TRANSLATE_REQUEST') return;
 
-    const { action, payload } = event.data;
+    const { action } = event.data;
 
     let response = { success: false };
 
@@ -215,17 +259,13 @@ window.addEventListener('message', async (event) => {
             chrome.runtime.sendMessage({ action: "_loadLocalizationData", url: "manual" }, function (response) {
                 WebLocalizationUpdateReplaceWords(response.result);
             });
+            response = { success: true };
         } catch (error) {
             response = { success: false, error: error.message };
         }
-    } else if (action === 'updateReplaceWords') {
+    } else if (action === 'undoTranslate') {
         try {
-            if (payload && payload.words && Array.isArray(payload.words)) {
-                WebLocalizationUpdateReplaceWords(payload.words);
-                response = { success: true };
-            } else {
-                response = { success: false, error: 'Invalid words format' };
-            }
+            response = await undoTranslate();
         } catch (error) {
             response = { success: false, error: error.message };
         }

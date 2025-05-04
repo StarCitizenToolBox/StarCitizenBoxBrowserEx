@@ -155,7 +155,7 @@ function setLocalData(key, data) {
 chrome.runtime.onInstalled.addListener(function () {
     chrome.contextMenus.create({
         id: "translate",
-        title: "翻译本页面",
+        title: "切换翻译",
         contexts: ["page"]
     });
 });
@@ -163,6 +163,6 @@ chrome.runtime.onInstalled.addListener(function () {
 chrome.contextMenus.onClicked.addListener((info, tab) => {
     console.log("contextMenus", info, tab);
     _initLocalization("manual").then(data => {
-        chrome.tabs.sendMessage(tab.id, {action: "_initTranslation", data});
+        chrome.tabs.sendMessage(tab.id, {action: "_toggleTranslation", data});
     });
 });
