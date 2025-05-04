@@ -162,7 +162,12 @@ chrome.runtime.onInstalled.addListener(function () {
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
     console.log("contextMenus", info, tab);
-    _initLocalization("manual").then(data => {
+    let passedUrl = "manual"
+    const supportedSites = ["robertsspaceindustries.com", "erkul.games", "uexcorp.space"];
+    if (supportedSites.find(site => tab.url.includes(site))) {
+        passedUrl = tab.url;
+    }
+    _initLocalization(passedUrl).then(data => {
         chrome.tabs.sendMessage(tab.id, {action: "_toggleTranslation", data});
     });
 });
