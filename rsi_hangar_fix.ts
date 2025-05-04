@@ -81,11 +81,11 @@
     }
 
     // 开始查找抽屉，如果找到执行监听回调
-    waitForElement(document, "#sidePanel", (risSidePanel) => {
-        startObserve(risSidePanel)
+    waitForElement(document, "#sidePanel", (rsiSidePanel) => {
+        startObserve(rsiSidePanel)
 
         // 初始检查：防止首次打开抽屉时按钮已经存在，MutationObserver 不触发
-        const button = sidePanel.querySelector('a[data-cy-id="button"][href="/account/settings"]')
+        const button = rsiSidePanel.querySelector('a[data-cy-id="button"][href="/account/settings"]')
         if (button) {
             copyAndAddButton(button)
         }

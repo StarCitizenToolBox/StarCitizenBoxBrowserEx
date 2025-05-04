@@ -9,6 +9,8 @@ node_modules
 # testing
 coverage
 
+# dist/
+
 # misc
 .DS_Store
 
@@ -25,3 +27,5 @@ yarn-error.log*
 
 # extension.js
 extension-env.d.ts
+
+.vscode/

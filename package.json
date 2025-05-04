@@ -21,7 +21,9 @@
   },
   "dependencies": {},
   "devDependencies": {
-    "extension": "^2.0.0-rc.23"
+    "extension": "^2.0.0-rc.23",
+    "@types/node": "^22.10.5",
+    "typescript": "5.3.3"
   },
   "private": true,
   "author": {

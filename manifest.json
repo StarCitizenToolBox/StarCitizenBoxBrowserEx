@@ -21,8 +21,8 @@
     "default_popup": "popup.html"
   },
   "background": {
-    "chromium:service_worker": "background.js",
-    "firefox:scripts": ["background.js"]
+    "chromium:service_worker": "background.ts",
+    "firefox:scripts": ["background.ts"]
   },
   "content_scripts": [
     {
@@ -33,7 +33,7 @@
         "https://robertsspaceindustries.com/spectrum/*"
       ],
       "js": [
-        "core.js",
+        "core.ts",
         "thirdparty/timeago.full.min.js"
       ],
       "run_at": "document_end"
@@ -52,7 +52,7 @@
         "https://robertsspaceindustries.com/*"
       ],
       "js": [
-        "rsi_hangar_fix.js"
+        "rsi_hangar_fix.ts"
       ],
       "run_at": "document_idle"
     }
