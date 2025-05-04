@@ -47,7 +47,7 @@ async function _initLocalization(url: string): Promise<ReplaceWord[]> {
     // TODO check version
     let data: Record<string, any> = {};
 
-    if (url.includes("robertsspaceindustries.com") || url.includes("manual")) {
+    if (url.includes("robertsspaceindustries.com")) {
         data["zh-CN"] = await _getJsonData("zh-CN-rsi.json", {cacheKey: "zh-CN", version: v.rsi});
         data["concierge"] = await _getJsonData("concierge.json", {cacheKey: "concierge", version: v.concierge});
         data["orgs"] = await _getJsonData("orgs.json", {cacheKey: "orgs", version: v.orgs});
@@ -57,6 +57,14 @@ async function _initLocalization(url: string): Promise<ReplaceWord[]> {
         data["UEX"] = await _getJsonData("zh-CN-uex.json", {cacheKey: "uex", version: v.uex});
     } else if (url.includes("erkul.games")) {
         data["DPS"] = await _getJsonData("zh-CN-dps.json", {cacheKey: "dps", version: v.dps});
+    } else if (url.includes("manual")) {
+        data["zh-CN"] = await _getJsonData("zh-CN-rsi.json", {cacheKey: "zh-CN", version: v.rsi});
+        data["concierge"] = await _getJsonData("concierge.json", {cacheKey: "concierge", version: v.concierge});
+        data["orgs"] = await _getJsonData("orgs.json", {cacheKey: "orgs", version: v.orgs});
+        data["address"] = await _getJsonData("addresses.json", {cacheKey: "orgs", version: v.addresses});
+        data["hangar"] = await _getJsonData("hangar.json", {cacheKey: "hangar", version: v.hangar});
+        data["UEX"] = await _getJsonData("zh-CN-uex.json", {cacheKey: "uex", version: v.uex});
+        data["DPS"] = await _getJsonData("zh-CN-dps.json", {cacheKey: "dps", version: v.dps});
     }
     // update data
     let replaceWords: ReplaceWord[] = [];
@@ -65,7 +73,7 @@ async function _initLocalization(url: string): Promise<ReplaceWord[]> {
         replaceWords.push(...getLocalizationResource(data, key));
     }
 
-    if (url.includes("robertsspaceindustries.com") || url.includes("manual")) {
+    if (url.includes("robertsspaceindustries.com")) {
         const org = "https://robertsspaceindustries.com/orgs";
         const citizens = "https://robertsspaceindustries.com/citizens";
         const organization = "https://robertsspaceindustries.com/account/organization";
@@ -105,6 +113,20 @@ async function _initLocalization(url: string): Promise<ReplaceWord[]> {
     } else if (url.includes("uexcorp.space")) {
         addLocalizationResource("UEX");
     } else if (url.includes("erkul.games")) {
+        addLocalizationResource("DPS");
+    } else if (url.includes("manual")) {
+        addLocalizationResource("zh-CN");
+        replaceWords.push({"word": 'members', "replacement": '名成员'});
+        addLocalizationResource("orgs");
+        addLocalizationResource("address");
+        replaceWords.push(
+            {"word": 'Total recruits: ', "replacement": '总邀请数：'},
+            {"word": 'Prospects ', "replacement": '未完成的邀请'},
+            {"word": 'Recruits', "replacement": '已完成的邀请'}
+        );
+        addLocalizationResource("concierge");
+        addLocalizationResource("hangar");
+        addLocalizationResource("UEX");
         addLocalizationResource("DPS");
     }
     return replaceWords;

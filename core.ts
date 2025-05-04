@@ -57,8 +57,6 @@ function WebLocalizationUpdateReplaceWords(w) {
 }
 
 async function allTranslate() {
-    SCLocalizationTranslating = true;
-
     async function replaceTextNode(node: Node, parentNode?: Element) {
         if (node.nodeType === Node.TEXT_NODE) {
             // 保存原始文本内容
@@ -244,7 +242,11 @@ InitWebLocalization();
 
 function _loadLocalizationData() {
     chrome.runtime.sendMessage({ action: "_loadLocalizationData", url: window.location.href }, function (response) {
-        WebLocalizationUpdateReplaceWords(response.result);
+        console.log("response ===" + JSON.stringify(response));
+        if (response.result.length > 0) {
+            SCLocalizationTranslating = true;
+            WebLocalizationUpdateReplaceWords(response.result);
+        }
     });
 }
 
@@ -255,6 +257,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             undoTranslate();
             return;
         }
+        SCLocalizationTranslating = true;
         SCLocalizationEnableSplitMode = true;
         WebLocalizationUpdateReplaceWords(request.data);
     }
@@ -271,6 +274,7 @@ window.addEventListener('message', async (event) => {
         try {
             SCLocalizationEnableSplitMode = true;
             chrome.runtime.sendMessage({ action: "_loadLocalizationData", url: "manual" }, function (response) {
+                SCLocalizationTranslating = true;
                 WebLocalizationUpdateReplaceWords(response.result);
             });
             response = { success: true };
