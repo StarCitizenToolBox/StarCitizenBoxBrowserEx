@@ -1,7 +1,7 @@
 declare const $: any;
 declare const timeago: any;
 
-let SCLocalizationReplaceLocalesMap = {};
+let SCLocalizationReplaceLocalesMap: Record<string, string> = {};
 let SCLocalizationEnableSplitMode = false;
 let SCLocalizationTranslating = false;
 
@@ -42,7 +42,7 @@ function LocalizationWatchUpdate() {
     }
 }
 
-function WebLocalizationUpdateReplaceWords(w) {
+function WebLocalizationUpdateReplaceWords(w: { word: string, replacement: string }[]) {
     let replaceWords = w.sort(function (a, b) {
         return b.word.length - a.word.length;
     });
@@ -135,7 +135,7 @@ function traverseElement(el: Element) {
     }
 }
 
-function translateElement(el, parentNode) {
+function translateElement(el: any, parentNode: any) {
     // Get the text field name
     let k;
     let translatedText;
@@ -191,7 +191,7 @@ function shouldTranslateEl(el: Element) {
     return true;
 }
 
-function GetSCLocalizationTranslateString(txtSrc) {
+function GetSCLocalizationTranslateString(txtSrc: string) {
     const key = txtSrc.toLowerCase().replace(/\xa0/g, ' ').replace(/\s{2,}/g, ' ').trim();
     const sourceKey = txtSrc.replace(/\xa0/g, ' ').replace(/\s{2,}/g, ' ').trim();
     let noTheKey = key.replace("the ", "");
@@ -244,7 +244,7 @@ InitWebLocalization();
 
 function _loadLocalizationData() {
     chrome.runtime.sendMessage({ action: "_loadLocalizationData", url: window.location.href }, function (response) {
-        console.log("response ===" + JSON.stringify(response));
+        // console.log("response ===" + JSON.stringify(response));
         if (response.result.length > 0) {
             SCLocalizationTranslating = true;
             WebLocalizationUpdateReplaceWords(response.result);

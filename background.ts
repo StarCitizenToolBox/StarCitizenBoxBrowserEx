@@ -33,8 +33,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 
 async function _checkVersion(): Promise<void> {
     dataVersion = await _getJsonData("versions.json") as VersionData;
-    console.log("Localization Version ===");
-    console.log(dataVersion);
+    console.log("Localization Version ===", dataVersion);
 }
 
 async function _initLocalization(url: string): Promise<ReplaceWord[]> {
