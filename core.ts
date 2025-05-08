@@ -254,6 +254,7 @@ function _loadLocalizationData() {
         if (response.result.length > 0) {
             SCLocalizationTranslating = true;
             WebLocalizationUpdateReplaceWords(response.result);
+            window.postMessage({ type: 'TOGGLED-SC-BOX-TRANSLATE', action: 'on' }, '*');
         }
     });
 }
@@ -283,8 +284,10 @@ window.addEventListener('message', async (event) => {
 
     if (action === 'translate') {
         try {
+            _saveLocalizationSwitchStater(true)
+            await new Promise(resolve => setTimeout(resolve, 100));
             SCLocalizationEnableSplitMode = true;
-            chrome.runtime.sendMessage({ action: "_loadLocalizationData", url: "manual" }, function (response) {
+            chrome.runtime.sendMessage({ action: "_loadLocalizationData", url: window.location.href }, function (response) {
                 SCLocalizationTranslating = true;
                 window.postMessage({ type: 'TOGGLED-SC-BOX-TRANSLATE', action: 'on' }, '*');
                 WebLocalizationUpdateReplaceWords(response.result);
@@ -295,6 +298,7 @@ window.addEventListener('message', async (event) => {
         }
     } else if (action === 'undoTranslate') {
         try {
+            _saveLocalizationSwitchStater(false)
             response = await undoTranslate();
         } catch (error: any) {
             response = { success: false, error: error.message };
