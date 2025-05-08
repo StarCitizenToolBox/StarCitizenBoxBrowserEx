@@ -1,57 +1,60 @@
 {
-  "manifest_version": 2,
+  "manifest_version": 3,
   "name": "星际公民盒子浏览器拓展",
   "version": "0.0.11",
   "description": "为星际公民网站及工具站提供汉化",
   "author": "xkeyC",
   "icons": {
-    "192": "icon.png"
+    "16": "icons/icon.png",
+    "48": "icons/icon.png",
+    "192": "icons/icon.png"
   },
-  "permissions": [
-    "storage",
+  "host_permissions": [
     "https://git.scbox.xkeyc.cn/*"
   ],
-  "browser_action": {
-    "default_icon": "icon.png",
-    "default_popup": "popup.html"
+  "permissions": [
+    "storage",
+    "contextMenus"
+  ],
+  "action": {
+    "default_popup": "action/default_popup.html"
   },
   "background": {
-    "scripts": [
-      "background.js"
-    ]
+    "service_worker": "background/service_worker.js"
   },
   "content_scripts": [
     {
       "matches": [
-        "https://robertsspaceindustries.com/*",
-        "https://*.robertsspaceindustries.com/*",
-        "https://www.erkul.games/*",
-        "https://uexcorp.space/*"
+        "*://*/*"
       ],
       "exclude_matches": [
         "https://robertsspaceindustries.com/spectrum/*"
       ],
       "js": [
-        "core.js",
-        "thirdparty/timeago.full.min.js"
-      ]
+        "content_scripts/content-0.js"
+      ],
+      "run_at": "document_end",
+      "css": []
     },
     {
       "matches": [
         "https://www.erkul.games/*"
       ],
       "js": [
-        "thirdparty/jquery.min.js"
-      ]
+        "content_scripts/content-1.js"
+      ],
+      "run_at": "document_end",
+      "css": []
     },
     {
       "matches": [
         "https://robertsspaceindustries.com/*"
       ],
       "js": [
-        "rsi_hangar_fix.js"
+        "content_scripts/content-2.js"
       ],
-      "run_at": "document_idle"
+      "run_at": "document_idle",
+      "css": []
     }
   ]
 }
