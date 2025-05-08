@@ -42,6 +42,12 @@ function LocalizationWatchUpdate() {
     }
 }
 
+function _saveLocalizationSwitchStater(enable: boolean) {;
+    chrome.runtime.sendMessage({ action: "_setTranslateSwitch", url: window.location.href, enableManual: enable }, function (response) {
+        console.log("SET translate switch ===", window.location.href, "enableManual === ", enable);
+    });
+}
+
 function WebLocalizationUpdateReplaceWords(w: { word: string, replacement: string }[]) {
     let replaceWords = w.sort(function (a, b) {
         return b.word.length - a.word.length;
@@ -257,12 +263,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         if (SCLocalizationTranslating) {
             SCLocalizationTranslating = false;
             undoTranslate();
+            _saveLocalizationSwitchStater(false)
             return;
         }
         SCLocalizationTranslating = true;
         SCLocalizationEnableSplitMode = true;
         window.postMessage({ type: 'TOGGLED-SC-BOX-TRANSLATE', action: 'on' }, '*');
         WebLocalizationUpdateReplaceWords(request.data);
+        _saveLocalizationSwitchStater(true)
     }
 });
 

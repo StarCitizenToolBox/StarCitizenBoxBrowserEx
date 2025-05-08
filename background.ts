@@ -24,24 +24,42 @@ chrome.runtime.onInstalled.addListener(function () {
 
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
     if (request.action === "_loadLocalizationData") {
-        _initLocalization(request.url).then(data => {
-            sendResponse({result: data});
+        let domain = getURLDomain(request.url);
+        let switchKey = `_translate_switch_${domain}`;
+        getLocalData(switchKey).then(enableManual => {
+            console.log("GET domain ===", domain, "enableManual === ", enableManual);
+            _initLocalization(request.url, enableManual).then(data => {
+                sendResponse({result: data});
+            });
+        })
+    } else if (request.action === "_setTranslateSwitch") {
+        let domain = getURLDomain(request.url);
+        let switchKey = `_translate_switch_${domain}`;
+        setLocalData(switchKey, request.enableManual).then(() => {
+            console.log("SET translate switch ===", domain, "enableManual === ", request.enableManual);
+            sendResponse({result: true});
         });
-        return true;
     }
+    return true;
 });
+
+function getURLDomain(url: string): string {
+    const urlObj = new URL(url);
+    return urlObj.hostname;
+}
 
 async function _checkVersion(): Promise<void> {
     dataVersion = await _getJsonData("versions.json") as VersionData;
     console.log("Localization Version ===", dataVersion);
 }
 
-async function _initLocalization(url: string): Promise<ReplaceWord[]> {
+async function _initLocalization(url: string, enableManual: boolean): Promise<ReplaceWord[]> {
     console.log("url ===" + url);
     if (dataVersion == null) {
         await _checkVersion();
-        return _initLocalization(url);
+        return _initLocalization(url, enableManual);
     }
+    if (enableManual != null && !enableManual) return [];
     let v = dataVersion
     // TODO check version
     let data: Record<string, any> = {};
@@ -50,17 +68,17 @@ async function _initLocalization(url: string): Promise<ReplaceWord[]> {
         data["zh-CN"] = await _getJsonData("zh-CN-rsi.json", {cacheKey: "zh-CN", version: v.rsi});
         data["concierge"] = await _getJsonData("concierge.json", {cacheKey: "concierge", version: v.concierge});
         data["orgs"] = await _getJsonData("orgs.json", {cacheKey: "orgs", version: v.orgs});
-        data["address"] = await _getJsonData("addresses.json", {cacheKey: "orgs", version: v.addresses});
+        data["address"] = await _getJsonData("addresses.json", {cacheKey: "addresses", version: v.addresses});
         data["hangar"] = await _getJsonData("hangar.json", {cacheKey: "hangar", version: v.hangar});
     } else if (url.includes("uexcorp.space")) {
         data["UEX"] = await _getJsonData("zh-CN-uex.json", {cacheKey: "uex", version: v.uex});
     } else if (url.includes("erkul.games")) {
         data["DPS"] = await _getJsonData("zh-CN-dps.json", {cacheKey: "dps", version: v.dps});
-    } else if (url.includes("manual")) {
+    } else if (enableManual) {
         data["zh-CN"] = await _getJsonData("zh-CN-rsi.json", {cacheKey: "zh-CN", version: v.rsi});
         data["concierge"] = await _getJsonData("concierge.json", {cacheKey: "concierge", version: v.concierge});
         data["orgs"] = await _getJsonData("orgs.json", {cacheKey: "orgs", version: v.orgs});
-        data["address"] = await _getJsonData("addresses.json", {cacheKey: "orgs", version: v.addresses});
+        data["address"] = await _getJsonData("addresses.json", {cacheKey: "address", version: v.addresses});
         data["hangar"] = await _getJsonData("hangar.json", {cacheKey: "hangar", version: v.hangar});
         data["UEX"] = await _getJsonData("zh-CN-uex.json", {cacheKey: "uex", version: v.uex});
         data["DPS"] = await _getJsonData("zh-CN-dps.json", {cacheKey: "dps", version: v.dps});
@@ -113,7 +131,7 @@ async function _initLocalization(url: string): Promise<ReplaceWord[]> {
         addLocalizationResource("UEX");
     } else if (url.includes("erkul.games")) {
         addLocalizationResource("DPS");
-    } else if (url.includes("manual")) {
+    } else if (enableManual) {
         addLocalizationResource("zh-CN");
         replaceWords.push({"word": 'members', "replacement": '名成员'});
         addLocalizationResource("orgs");
@@ -155,7 +173,7 @@ interface JsonDataOptions {
 }
 
 async function _getJsonData(fileName: string, options: JsonDataOptions = {}): Promise<any> {
-    const { cacheKey = "", version = null } = options;
+    const {cacheKey = "", version = null} = options;
     const url = "https://git.scbox.xkeyc.cn/SCToolBox/ScWeb_Chinese_Translate/raw/branch/main/json/locales/" + fileName;
     if (cacheKey && cacheKey !== "") {
         const localVersion = await getLocalData(`${cacheKey}_version`);
@@ -181,7 +199,10 @@ function getLocalData(key: string): Promise<any> {
     return new Promise((resolve) => {
         chrome.storage.local.get([key], (result) => {
             const data = result[key];
-            resolve(data || null);
+            if (data === undefined ){
+                return  resolve(null);
+            }
+            resolve(data);
         });
     });
 }
@@ -211,9 +232,10 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
     if (tab && tab.url && supportedSites.find(site => tab.url!.includes(site))) {
         passedUrl = tab.url;
     }
-    _initLocalization(passedUrl).then(data => {
+    _initLocalization(passedUrl, true).then(data => {
         if (tab && tab.id !== undefined) {
-            chrome.tabs.sendMessage(tab.id, {action: "_toggleTranslation", data});
+            chrome.tabs.sendMessage(tab.id, {action: "_toggleTranslation", data}).then((_) => {
+            });
         }
     });
 });
