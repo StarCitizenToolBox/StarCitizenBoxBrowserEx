@@ -48,5 +48,11 @@
       "run_at": "document_end",
       "css": []
     }
-  ]
+  ],
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "{cebbbbe9-d4d2-4409-a244-2d6145fc0de8}",
+      "strict_min_version": "58.0"
+    }
+  }
 }
