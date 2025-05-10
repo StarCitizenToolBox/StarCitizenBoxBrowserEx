@@ -45,16 +45,6 @@
       ],
       "run_at": "document_end",
       "css": []
-    },
-    {
-      "matches": [
-        "https://robertsspaceindustries.com/*"
-      ],
-      "js": [
-        "content_scripts/content-2.js"
-      ],
-      "run_at": "document_idle",
-      "css": []
     }
   ]
 }
