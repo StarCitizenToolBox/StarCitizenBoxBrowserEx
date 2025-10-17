@@ -21,6 +21,20 @@ SC网站翻译项目：[CxJuice/ScWeb_Chinese_Translate](https://github.com/CxJu
 
 下载 zip 后使用插件的开发者功能手动安装 dist/chrome 文件夹 Firefox 安装 dist/firefox 文件夹。
 
+### 通过 GitHub Actions 构建
+
+仓库中包含了一个可以手动触发的 GitHub Actions 工作流，可以自动构建 Chrome 和 Firefox 扩展并上传到 Actions 产物中。
+
+**使用步骤：**
+
+1. 访问仓库的 [Actions](../../actions) 页面
+2. 在左侧选择 "Build Browser Extensions" 工作流
+3. 点击右侧的 "Run workflow" 按钮
+4. 选择分支后点击 "Run workflow" 确认
+5. 等待构建完成后，在工作流运行详情页面下载 `chrome-extension.zip` 和 `firefox-extension.zip` 产物
+
+产物保留时间为 30 天。
+
 ### 开发者
 
 #### 调用翻译Hook
