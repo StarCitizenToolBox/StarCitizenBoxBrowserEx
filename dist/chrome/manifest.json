@@ -10,7 +10,7 @@
     "192": "icons/icon.png"
   },
   "host_permissions": [
-    "https://git.scbox.xkeyc.cn/*"
+    "https://ecdn.git.scbox.xkeyc.cn/*"
   ],
   "permissions": [
     "storage",

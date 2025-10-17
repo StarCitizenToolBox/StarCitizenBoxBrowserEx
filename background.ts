@@ -174,7 +174,7 @@ interface JsonDataOptions {
 
 async function _getJsonData(fileName: string, options: JsonDataOptions = {}): Promise<any> {
     const {cacheKey = "", version = null} = options;
-    const url = "https://git.scbox.xkeyc.cn/SCToolBox/ScWeb_Chinese_Translate/raw/branch/main/json/locales/" + fileName;
+    const url = "https://ecdn.git.scbox.xkeyc.cn/SCToolBox/ScWeb_Chinese_Translate/raw/branch/main/json/locales/" + fileName;
     if (cacheKey && cacheKey !== "") {
         const localVersion = await getLocalData(`${cacheKey}_version`);
         const data = await getLocalData(cacheKey);
