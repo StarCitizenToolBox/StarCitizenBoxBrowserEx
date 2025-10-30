@@ -18,6 +18,11 @@ let dataVersion: VersionData | null = null
 
 chrome.runtime.onInstalled.addListener(function () {
     console.log("SWTT init");
+    chrome.contextMenus.create({
+        id: "translate",
+        title: "切换翻译",
+        contexts: ["all"]
+    });
 });
 
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
@@ -60,7 +65,9 @@ async function _initLocalization(url: string, enableManual: boolean): Promise<Re
     if (dataVersion == null) {
         await _checkVersion();
     }
-    let v = dataVersion!
+    // dataVersion is guaranteed to be non-null after _checkVersion() call above
+    if (dataVersion == null) return [];
+    let v = dataVersion
     // TODO check version
     let data: Record<string, any> = {};
 
@@ -217,13 +224,7 @@ function setLocalData(key: string, data: any): Promise<void> {
     });
 }
 
-chrome.runtime.onInstalled.addListener(function () {
-    chrome.contextMenus.create({
-        id: "translate",
-        title: "切换翻译",
-        contexts: ["all"]
-    });
-});
+
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
     console.log("contextMenus", info, tab);
