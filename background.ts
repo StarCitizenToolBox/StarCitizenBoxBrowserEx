@@ -61,34 +61,27 @@ async function _initLocalization(url: string, enableManual: boolean): Promise<Re
     // Check if translation is disabled first, before fetching any resources
     if (enableManual != null && !enableManual) return [];
     
-    // Only check version and fetch resources after confirming translation is enabled
-    if (dataVersion == null) {
-        await _checkVersion();
-    }
-    // Defensive check: if version fetch failed, return empty array
-    if (dataVersion == null) return [];
-    let v = dataVersion
     // TODO check version
     let data: Record<string, any> = {};
 
     if (url.includes("robertsspaceindustries.com")) {
-        data["zh-CN"] = await _getJsonData("zh-CN-rsi.json", {cacheKey: "zh-CN", version: v.rsi});
-        data["concierge"] = await _getJsonData("concierge.json", {cacheKey: "concierge", version: v.concierge});
-        data["orgs"] = await _getJsonData("orgs.json", {cacheKey: "orgs", version: v.orgs});
-        data["address"] = await _getJsonData("addresses.json", {cacheKey: "addresses", version: v.addresses});
-        data["hangar"] = await _getJsonData("hangar.json", {cacheKey: "hangar", version: v.hangar});
+        data["zh-CN"] = await _getJsonData("zh-CN-rsi.json", {cacheKey: "zh-CN", versionKey: "rsi"});
+        data["concierge"] = await _getJsonData("concierge.json", {cacheKey: "concierge", versionKey: "concierge"});
+        data["orgs"] = await _getJsonData("orgs.json", {cacheKey: "orgs", versionKey: "orgs"});
+        data["address"] = await _getJsonData("addresses.json", {cacheKey: "addresses", versionKey: "addresses"});
+        data["hangar"] = await _getJsonData("hangar.json", {cacheKey: "hangar", versionKey: "hangar"});
     } else if (url.includes("uexcorp.space")) {
-        data["UEX"] = await _getJsonData("zh-CN-uex.json", {cacheKey: "uex", version: v.uex});
+        data["UEX"] = await _getJsonData("zh-CN-uex.json", {cacheKey: "uex", versionKey: "uex"});
     } else if (url.includes("erkul.games")) {
-        data["DPS"] = await _getJsonData("zh-CN-dps.json", {cacheKey: "dps", version: v.dps});
+        data["DPS"] = await _getJsonData("zh-CN-dps.json", {cacheKey: "dps", versionKey: "dps"});
     } else if (enableManual) {
-        data["zh-CN"] = await _getJsonData("zh-CN-rsi.json", {cacheKey: "zh-CN", version: v.rsi});
-        data["concierge"] = await _getJsonData("concierge.json", {cacheKey: "concierge", version: v.concierge});
-        data["orgs"] = await _getJsonData("orgs.json", {cacheKey: "orgs", version: v.orgs});
-        data["address"] = await _getJsonData("addresses.json", {cacheKey: "address", version: v.addresses});
-        data["hangar"] = await _getJsonData("hangar.json", {cacheKey: "hangar", version: v.hangar});
-        data["UEX"] = await _getJsonData("zh-CN-uex.json", {cacheKey: "uex", version: v.uex});
-        data["DPS"] = await _getJsonData("zh-CN-dps.json", {cacheKey: "dps", version: v.dps});
+        data["zh-CN"] = await _getJsonData("zh-CN-rsi.json", {cacheKey: "zh-CN", versionKey: "rsi"});
+        data["concierge"] = await _getJsonData("concierge.json", {cacheKey: "concierge", versionKey: "concierge"});
+        data["orgs"] = await _getJsonData("orgs.json", {cacheKey: "orgs", versionKey: "orgs"});
+        data["address"] = await _getJsonData("addresses.json", {cacheKey: "address", versionKey: "addresses"});
+        data["hangar"] = await _getJsonData("hangar.json", {cacheKey: "hangar", versionKey: "hangar"});
+        data["UEX"] = await _getJsonData("zh-CN-uex.json", {cacheKey: "uex", versionKey: "uex"});
+        data["DPS"] = await _getJsonData("zh-CN-dps.json", {cacheKey: "dps", versionKey: "dps"});
     }
     // update data
     let replaceWords: ReplaceWord[] = [];
@@ -176,12 +169,22 @@ function getLocalizationResource(localizationResource: Record<string, any>, key:
 
 interface JsonDataOptions {
     cacheKey?: string;
-    version?: string | null;
+    versionKey?: string;
 }
 
 async function _getJsonData(fileName: string, options: JsonDataOptions = {}): Promise<any> {
-    const {cacheKey = "", version = null} = options;
+    const {cacheKey = "", versionKey = ""} = options;
     const url = "https://ecdn.git.scbox.xkeyc.cn/SCToolBox/ScWeb_Chinese_Translate/raw/branch/main/json/locales/" + fileName;
+    
+    // Get version from dataVersion by versionKey if needed
+    let version: string | null = null;
+    if (versionKey && versionKey !== "") {
+        if (dataVersion == null) {
+            await _checkVersion();
+        }
+        version = dataVersion?.[versionKey] ?? null;
+    }
+    
     if (cacheKey && cacheKey !== "") {
         const localVersion = await getLocalData(`${cacheKey}_version`);
         const data = await getLocalData(cacheKey);
