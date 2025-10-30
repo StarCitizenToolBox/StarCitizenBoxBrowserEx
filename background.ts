@@ -17,9 +17,12 @@ interface ReplaceWord {
 let dataVersion: VersionData | null = null
 
 chrome.runtime.onInstalled.addListener(function () {
-    _checkVersion().then(_ => {
-    });
     console.log("SWTT init");
+    chrome.contextMenus.create({
+        id: "translate",
+        title: "切换翻译",
+        contexts: ["all"]
+    });
 });
 
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
@@ -55,11 +58,15 @@ async function _checkVersion(): Promise<void> {
 
 async function _initLocalization(url: string, enableManual: boolean): Promise<ReplaceWord[]> {
     console.log("url ===" + url);
+    // Check if translation is disabled first, before fetching any resources
+    if (enableManual != null && !enableManual) return [];
+    
+    // Only check version and fetch resources after confirming translation is enabled
     if (dataVersion == null) {
         await _checkVersion();
-        return _initLocalization(url, enableManual);
     }
-    if (enableManual != null && !enableManual) return [];
+    // Defensive check: if version fetch failed, return empty array
+    if (dataVersion == null) return [];
     let v = dataVersion
     // TODO check version
     let data: Record<string, any> = {};
@@ -217,13 +224,7 @@ function setLocalData(key: string, data: any): Promise<void> {
     });
 }
 
-chrome.runtime.onInstalled.addListener(function () {
-    chrome.contextMenus.create({
-        id: "translate",
-        title: "切换翻译",
-        contexts: ["all"]
-    });
-});
+
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
     console.log("contextMenus", info, tab);
