@@ -65,7 +65,7 @@ async function _initLocalization(url: string, enableManual: boolean): Promise<Re
     if (dataVersion == null) {
         await _checkVersion();
     }
-    // dataVersion is guaranteed to be non-null after _checkVersion() call above
+    // Defensive check: if version fetch failed, return empty array
     if (dataVersion == null) return [];
     let v = dataVersion
     // TODO check version
