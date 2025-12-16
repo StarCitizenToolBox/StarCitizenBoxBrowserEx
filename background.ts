@@ -14,10 +14,15 @@ interface ReplaceWord {
     replacement: string;
 }
 
+interface CacheStats {
+    domain: string;
+    count: number;
+}
+
 let dataVersion: VersionData | null = null
 
 chrome.runtime.onInstalled.addListener(function () {
-    console.log("SWTT init");
+    console.log("SC Box Extension init");
     chrome.contextMenus.create({
         id: "translate",
         title: "切换翻译",
@@ -32,7 +37,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
         getLocalData(switchKey).then(enableManual => {
             console.log("GET domain ===", domain, "enableManual === ", enableManual);
             _initLocalization(request.url, enableManual).then(data => {
-                sendResponse({result: data});
+                sendResponse({ result: data });
             });
         })
     } else if (request.action === "_setTranslateSwitch") {
@@ -40,15 +45,81 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
         let switchKey = `_translate_switch_${domain}`;
         setLocalData(switchKey, request.enableManual).then(() => {
             console.log("SET translate switch ===", domain, "enableManual === ", request.enableManual);
-            sendResponse({result: true});
+            sendResponse({ result: true });
+        });
+    } else if (request.action === "_getTranslateSwitch") {
+        let domain = getURLDomain(request.url);
+        let switchKey = `_translate_switch_${domain}`;
+        getLocalData(switchKey).then(enableManual => {
+            sendResponse({ enabled: enableManual === true });
+        });
+    } else if (request.action === "_getAllCacheStats") {
+        getAllCacheStats().then(stats => {
+            sendResponse({ stats });
+        });
+    } else if (request.action === "_clearDomainCache") {
+        const cacheKey = `translation_cache_${request.domain}`;
+        chrome.storage.local.remove(cacheKey, () => {
+            sendResponse({ success: true });
+        });
+    } else if (request.action === "_clearAllCache") {
+        clearAllTranslationCaches().then(() => {
+            sendResponse({ success: true });
         });
     }
     return true;
 });
 
 function getURLDomain(url: string): string {
-    const urlObj = new URL(url);
-    return urlObj.hostname;
+    try {
+        const urlObj = new URL(url);
+        return urlObj.hostname;
+    } catch {
+        return url;
+    }
+}
+
+async function getAllCacheStats(): Promise<CacheStats[]> {
+    return new Promise((resolve) => {
+        chrome.storage.local.get(null, (items) => {
+            const stats: CacheStats[] = [];
+            for (const key of Object.keys(items)) {
+                if (key.startsWith('translation_cache_')) {
+                    const domain = key.replace('translation_cache_', '');
+                    const cache = items[key];
+                    if (cache && cache.order) {
+                        stats.push({
+                            domain,
+                            count: cache.order.length
+                        });
+                    }
+                }
+            }
+            // Sort by count descending
+            stats.sort((a, b) => b.count - a.count);
+            resolve(stats);
+        });
+    });
+}
+
+async function clearAllTranslationCaches(): Promise<void> {
+    return new Promise((resolve) => {
+        chrome.storage.local.get(null, (items) => {
+            const keysToRemove: string[] = [];
+            for (const key of Object.keys(items)) {
+                if (key.startsWith('translation_cache_')) {
+                    keysToRemove.push(key);
+                }
+            }
+            if (keysToRemove.length > 0) {
+                chrome.storage.local.remove(keysToRemove, () => {
+                    resolve();
+                });
+            } else {
+                resolve();
+            }
+        });
+    });
 }
 
 async function _checkVersion(): Promise<void> {
@@ -60,28 +131,28 @@ async function _initLocalization(url: string, enableManual: boolean): Promise<Re
     console.log("url ===" + url);
     // Check if translation is disabled first, before fetching any resources
     if (enableManual != null && !enableManual) return [];
-    
+
     // TODO check version
     let data: Record<string, any> = {};
 
     if (url.includes("robertsspaceindustries.com")) {
-        data["zh-CN"] = await _getJsonData("zh-CN-rsi.json", {cacheKey: "zh-CN", versionKey: "rsi"});
-        data["concierge"] = await _getJsonData("concierge.json", {cacheKey: "concierge", versionKey: "concierge"});
-        data["orgs"] = await _getJsonData("orgs.json", {cacheKey: "orgs", versionKey: "orgs"});
-        data["address"] = await _getJsonData("addresses.json", {cacheKey: "addresses", versionKey: "addresses"});
-        data["hangar"] = await _getJsonData("hangar.json", {cacheKey: "hangar", versionKey: "hangar"});
+        data["zh-CN"] = await _getJsonData("zh-CN-rsi.json", { cacheKey: "zh-CN", versionKey: "rsi" });
+        data["concierge"] = await _getJsonData("concierge.json", { cacheKey: "concierge", versionKey: "concierge" });
+        data["orgs"] = await _getJsonData("orgs.json", { cacheKey: "orgs", versionKey: "orgs" });
+        data["address"] = await _getJsonData("addresses.json", { cacheKey: "addresses", versionKey: "addresses" });
+        data["hangar"] = await _getJsonData("hangar.json", { cacheKey: "hangar", versionKey: "hangar" });
     } else if (url.includes("uexcorp.space")) {
-        data["UEX"] = await _getJsonData("zh-CN-uex.json", {cacheKey: "uex", versionKey: "uex"});
+        data["UEX"] = await _getJsonData("zh-CN-uex.json", { cacheKey: "uex", versionKey: "uex" });
     } else if (url.includes("erkul.games")) {
-        data["DPS"] = await _getJsonData("zh-CN-dps.json", {cacheKey: "dps", versionKey: "dps"});
+        data["DPS"] = await _getJsonData("zh-CN-dps.json", { cacheKey: "dps", versionKey: "dps" });
     } else if (enableManual) {
-        data["zh-CN"] = await _getJsonData("zh-CN-rsi.json", {cacheKey: "zh-CN", versionKey: "rsi"});
-        data["concierge"] = await _getJsonData("concierge.json", {cacheKey: "concierge", versionKey: "concierge"});
-        data["orgs"] = await _getJsonData("orgs.json", {cacheKey: "orgs", versionKey: "orgs"});
-        data["address"] = await _getJsonData("addresses.json", {cacheKey: "address", versionKey: "addresses"});
-        data["hangar"] = await _getJsonData("hangar.json", {cacheKey: "hangar", versionKey: "hangar"});
-        data["UEX"] = await _getJsonData("zh-CN-uex.json", {cacheKey: "uex", versionKey: "uex"});
-        data["DPS"] = await _getJsonData("zh-CN-dps.json", {cacheKey: "dps", versionKey: "dps"});
+        data["zh-CN"] = await _getJsonData("zh-CN-rsi.json", { cacheKey: "zh-CN", versionKey: "rsi" });
+        data["concierge"] = await _getJsonData("concierge.json", { cacheKey: "concierge", versionKey: "concierge" });
+        data["orgs"] = await _getJsonData("orgs.json", { cacheKey: "orgs", versionKey: "orgs" });
+        data["address"] = await _getJsonData("addresses.json", { cacheKey: "address", versionKey: "addresses" });
+        data["hangar"] = await _getJsonData("hangar.json", { cacheKey: "hangar", versionKey: "hangar" });
+        data["UEX"] = await _getJsonData("zh-CN-uex.json", { cacheKey: "uex", versionKey: "uex" });
+        data["DPS"] = await _getJsonData("zh-CN-dps.json", { cacheKey: "dps", versionKey: "dps" });
     }
     // update data
     let replaceWords: ReplaceWord[] = [];
@@ -104,7 +175,7 @@ async function _initLocalization(url: string, enableManual: boolean): Promise<Re
         }
         addLocalizationResource("zh-CN");
         if (url.startsWith(org) || url.startsWith(citizens) || url.startsWith(organization)) {
-            replaceWords.push({"word": 'members', "replacement": '名成员'});
+            replaceWords.push({ "word": 'members', "replacement": '名成员' });
             addLocalizationResource("orgs");
         }
         if (url.startsWith(address)) {
@@ -113,9 +184,9 @@ async function _initLocalization(url: string, enableManual: boolean): Promise<Re
 
         if (url.startsWith(referral)) {
             replaceWords.push(
-                {"word": 'Total recruits: ', "replacement": '总邀请数：'},
-                {"word": 'Prospects ', "replacement": '未完成的邀请'},
-                {"word": 'Recruits', "replacement": '已完成的邀请'}
+                { "word": 'Total recruits: ', "replacement": '总邀请数：' },
+                { "word": 'Prospects ', "replacement": '未完成的邀请' },
+                { "word": 'Recruits', "replacement": '已完成的邀请' }
             );
         }
 
@@ -133,13 +204,13 @@ async function _initLocalization(url: string, enableManual: boolean): Promise<Re
         addLocalizationResource("DPS");
     } else if (enableManual) {
         addLocalizationResource("zh-CN");
-        replaceWords.push({"word": 'members', "replacement": '名成员'});
+        replaceWords.push({ "word": 'members', "replacement": '名成员' });
         addLocalizationResource("orgs");
         addLocalizationResource("address");
         replaceWords.push(
-            {"word": 'Total recruits: ', "replacement": '总邀请数：'},
-            {"word": 'Prospects ', "replacement": '未完成的邀请'},
-            {"word": 'Recruits', "replacement": '已完成的邀请'}
+            { "word": 'Total recruits: ', "replacement": '总邀请数：' },
+            { "word": 'Prospects ', "replacement": '未完成的邀请' },
+            { "word": 'Recruits', "replacement": '已完成的邀请' }
         );
         addLocalizationResource("concierge");
         addLocalizationResource("hangar");
@@ -161,7 +232,7 @@ function getLocalizationResource(localizationResource: Record<string, any>, key:
                 .toLowerCase()
                 .replace(/\xa0/g, ' ')
                 .replace(/\s{2,}/g, ' ');
-            localizations.push({"word": trimmedKey, "replacement": String(v)});
+            localizations.push({ "word": trimmedKey, "replacement": String(v) });
         }
     }
     return localizations;
@@ -173,9 +244,9 @@ interface JsonDataOptions {
 }
 
 async function _getJsonData(fileName: string, options: JsonDataOptions = {}): Promise<any> {
-    const {cacheKey = "", versionKey = ""} = options;
+    const { cacheKey = "", versionKey = "" } = options;
     const url = "https://ecdn.git.scbox.xkeyc.cn/SCToolBox/ScWeb_Chinese_Translate/raw/branch/main/json/locales/" + fileName;
-    
+
     // Get version from dataVersion by versionKey if needed
     let version: string | null = null;
     if (versionKey && versionKey !== "") {
@@ -184,7 +255,7 @@ async function _getJsonData(fileName: string, options: JsonDataOptions = {}): Pr
         }
         version = dataVersion?.[versionKey] ?? null;
     }
-    
+
     if (cacheKey && cacheKey !== "") {
         const localVersion = await getLocalData(`${cacheKey}_version`);
         const data = await getLocalData(cacheKey);
@@ -193,7 +264,7 @@ async function _getJsonData(fileName: string, options: JsonDataOptions = {}): Pr
         }
     }
     const startTime = new Date();
-    const response = await fetch(url, {method: 'GET', mode: 'cors'});
+    const response = await fetch(url, { method: 'GET', mode: 'cors' });
     const endTime = new Date();
     const data = await response.json();
     if (cacheKey && cacheKey !== "") {
@@ -209,8 +280,8 @@ function getLocalData(key: string): Promise<any> {
     return new Promise((resolve) => {
         chrome.storage.local.get([key], (result) => {
             const data = result[key];
-            if (data === undefined ){
-                return  resolve(null);
+            if (data === undefined) {
+                return resolve(null);
             }
             resolve(data);
         });
@@ -231,15 +302,8 @@ function setLocalData(key: string, data: any): Promise<void> {
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
     console.log("contextMenus", info, tab);
-    let passedUrl = "manual";
-    const supportedSites = ["robertsspaceindustries.com", "erkul.games", "uexcorp.space"];
-    if (tab && tab.url && supportedSites.find(site => tab.url!.includes(site))) {
-        passedUrl = tab.url;
+    if (tab && tab.id !== undefined) {
+        chrome.tabs.sendMessage(tab.id, { action: "_toggleTranslation" }).then((_) => {
+        });
     }
-    _initLocalization(passedUrl, true).then(data => {
-        if (tab && tab.id !== undefined) {
-            chrome.tabs.sendMessage(tab.id, {action: "_toggleTranslation", data}).then((_) => {
-            });
-        }
-    });
 });

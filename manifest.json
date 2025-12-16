@@ -11,7 +11,8 @@
     "192": "icon.png"
   },
   "host_permissions": [
-    "https://ecdn.git.scbox.xkeyc.cn/*"
+    "https://ecdn.git.scbox.xkeyc.cn/*",
+    "http://localhost:8066/*"
   ],
   "permissions": [
     "storage",
