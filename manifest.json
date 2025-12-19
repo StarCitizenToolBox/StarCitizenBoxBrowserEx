@@ -36,17 +36,7 @@
         "https://robertsspaceindustries.com/spectrum/*"
       ],
       "js": [
-        "core.ts",
-        "thirdparty/timeago.full.min.js"
-      ],
-      "run_at": "document_end"
-    },
-    {
-      "matches": [
-        "https://www.erkul.games/*"
-      ],
-      "js": [
-        "thirdparty/jquery.min.js"
+        "core.ts"
       ],
       "run_at": "document_end"
     }

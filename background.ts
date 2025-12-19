@@ -1,74 +1,350 @@
-interface VersionData {
-    rsi: string;
-    concierge: string;
-    orgs: string;
-    addresses: string;
-    hangar: string;
-    uex: string;
-    dps: string;
-    [key: string]: string;
-}
-
-interface ReplaceWord {
-    word: string;
-    replacement: string;
-}
+// Configuration
+const TRANSLATE_API_BASE_URL = "http://localhost:8066/api/v1";
+const CACHE_MAX_SIZE = 100000;
 
 interface CacheStats {
     domain: string;
     count: number;
 }
 
-let dataVersion: VersionData | null = null
+// Translation cache structure
+interface TranslationCacheEntry {
+    sourceText: string;
+    targetText: string;
+    matchType: string;
+    timestamp: number;
+}
+
+interface TranslationCache {
+    entries: Record<string, TranslationCacheEntry>;
+    order: string[]; // For LRU eviction
+}
+
+// API Response types
+interface TranslateApiResponse {
+    source_text: string;
+    target_text: string;
+    source_lang: string;
+    target_lang: string;
+    match_type: string;
+    exact_terms: any[];
+    reference_terms: any[];
+    from_cache: boolean;
+    used_llm: boolean;
+}
+
+interface FastTranslateResult {
+    source_text: string;
+    target_text: string;
+    match_type: 'term' | 'template' | 'cache' | 'noCache' | 'tooLong' | 'llm';
+}
+
+interface FastTranslateApiResponse {
+    results: FastTranslateResult[];
+    total: number;
+    matched: number;
+}
+
+// Per-domain memory cache
+const domainMemoryCaches = new Map<string, Record<string, TranslationCacheEntry>>();
+
+// Create context menu on every service worker startup
+function ensureContextMenuExists() {
+    chrome.contextMenus.remove("translate", () => {
+        chrome.runtime.lastError;
+        chrome.contextMenus.create({
+            id: "translate",
+            title: "翻译为中文",
+            contexts: ["all"]
+        });
+    });
+}
+
+ensureContextMenuExists();
 
 chrome.runtime.onInstalled.addListener(function () {
     console.log("SC Box Extension init");
-    chrome.contextMenus.create({
-        id: "translate",
-        title: "切换翻译",
-        contexts: ["all"]
-    });
 });
 
-chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
-    if (request.action === "_loadLocalizationData") {
-        let domain = getURLDomain(request.url);
-        let switchKey = `_translate_switch_${domain}`;
-        getLocalData(switchKey).then(enableManual => {
-            console.log("GET domain ===", domain, "enableManual === ", enableManual);
-            _initLocalization(request.url, enableManual).then(data => {
-                sendResponse({ result: data });
-            });
-        })
-    } else if (request.action === "_setTranslateSwitch") {
-        let domain = getURLDomain(request.url);
-        let switchKey = `_translate_switch_${domain}`;
-        setLocalData(switchKey, request.enableManual).then(() => {
-            console.log("SET translate switch ===", domain, "enableManual === ", request.enableManual);
-            sendResponse({ result: true });
-        });
-    } else if (request.action === "_getTranslateSwitch") {
-        let domain = getURLDomain(request.url);
-        let switchKey = `_translate_switch_${domain}`;
-        getLocalData(switchKey).then(enableManual => {
-            sendResponse({ enabled: enableManual === true });
-        });
-    } else if (request.action === "_getAllCacheStats") {
-        getAllCacheStats().then(stats => {
-            sendResponse({ stats });
-        });
-    } else if (request.action === "_clearDomainCache") {
-        const cacheKey = `translation_cache_${request.domain}`;
-        chrome.storage.local.remove(cacheKey, () => {
-            sendResponse({ success: true });
-        });
-    } else if (request.action === "_clearAllCache") {
-        clearAllTranslationCaches().then(() => {
-            sendResponse({ success: true });
-        });
+// Update context menu title based on translation status
+function updateContextMenuTitle(isTranslating: boolean) {
+    chrome.contextMenus.update("translate", {
+        title: isTranslating ? "显示原文" : "翻译为中文"
+    });
+}
+
+// Query translation status from content script
+async function queryTranslationStatus(tabId: number): Promise<void> {
+    try {
+        const response = await chrome.tabs.sendMessage(tabId, { action: "_getTranslationStatus" });
+        if (response && typeof response.isTranslating === 'boolean') {
+            updateContextMenuTitle(response.isTranslating);
+        } else {
+            updateContextMenuTitle(false);
+        }
+    } catch {
+        updateContextMenuTitle(false);
     }
-    return true;
+}
+
+chrome.tabs.onActivated.addListener((activeInfo) => {
+    queryTranslationStatus(activeInfo.tabId);
 });
+
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+    if (changeInfo.status === 'complete' && tab.active) {
+        queryTranslationStatus(tabId);
+    }
+});
+
+// ==================== Cache Operations ====================
+
+async function getTranslationCache(domain: string): Promise<TranslationCache> {
+    return new Promise((resolve) => {
+        const cacheKey = `translation_cache_${domain}`;
+        chrome.storage.local.get([cacheKey], (result) => {
+            const cache = result[cacheKey] as TranslationCache;
+            if (cache && cache.entries && cache.order) {
+                resolve(cache);
+            } else {
+                resolve({ entries: {}, order: [] });
+            }
+        });
+    });
+}
+
+async function saveTranslationCache(domain: string, cache: TranslationCache): Promise<void> {
+    return new Promise((resolve) => {
+        const cacheKey = `translation_cache_${domain}`;
+
+        // Evict oldest entries if over limit
+        while (cache.order.length > CACHE_MAX_SIZE) {
+            const oldestKey = cache.order.shift();
+            if (oldestKey) {
+                delete cache.entries[oldestKey];
+            }
+        }
+
+        // Update memory cache
+        domainMemoryCaches.set(domain, cache.entries);
+        chrome.storage.local.set({ [cacheKey]: cache }, resolve);
+    });
+}
+
+async function loadCacheToMemory(domain: string): Promise<Record<string, TranslationCacheEntry>> {
+    if (domainMemoryCaches.has(domain)) {
+        return domainMemoryCaches.get(domain)!;
+    }
+    const cache = await getTranslationCache(domain);
+    domainMemoryCaches.set(domain, cache.entries);
+    return cache.entries;
+}
+
+async function getCachedTranslation(domain: string, text: string): Promise<TranslationCacheEntry | null> {
+    const memoryCache = domainMemoryCaches.get(domain);
+    if (memoryCache && memoryCache[text]) {
+        return memoryCache[text];
+    }
+
+    const cache = await getTranslationCache(domain);
+    if (!domainMemoryCaches.has(domain)) {
+        domainMemoryCaches.set(domain, cache.entries);
+    }
+    return cache.entries[text] || null;
+}
+
+async function setCachedTranslation(domain: string, text: string, entry: TranslationCacheEntry): Promise<void> {
+    const cache = await getTranslationCache(domain);
+
+    const idx = cache.order.indexOf(text);
+    if (idx > -1) {
+        cache.order.splice(idx, 1);
+    }
+
+    cache.entries[text] = entry;
+    cache.order.push(text);
+
+    await saveTranslationCache(domain, cache);
+}
+
+async function setCachedTranslationsBatch(domain: string, entries: TranslationCacheEntry[]): Promise<void> {
+    const cache = await getTranslationCache(domain);
+
+    for (const entry of entries) {
+        const text = entry.sourceText;
+        const idx = cache.order.indexOf(text);
+        if (idx > -1) {
+            cache.order.splice(idx, 1);
+        }
+
+        cache.entries[text] = entry;
+        cache.order.push(text);
+    }
+
+    await saveTranslationCache(domain, cache);
+}
+
+// ==================== API Calls ====================
+
+async function translateViaFastApi(texts: string[], domain: string): Promise<FastTranslateApiResponse | null> {
+    try {
+        const response = await fetch(`${TRANSLATE_API_BASE_URL}/translate/fast`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                texts: texts,
+                source_lang: 'en',
+                target_lang: 'zh-CN',
+                domain: domain
+            })
+        });
+
+        if (!response.ok) {
+            return null;
+        }
+
+        return await response.json() as FastTranslateApiResponse;
+    } catch (error) {
+        console.error('Fast Translation API request failed:', error);
+        return null;
+    }
+}
+
+async function translateViaApi(text: string, domain: string): Promise<TranslateApiResponse | null> {
+    try {
+        const response = await fetch(`${TRANSLATE_API_BASE_URL}/translate`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                text: text,
+                source_lang: 'en',
+                target_lang: 'zh-CN',
+                domain: domain
+            })
+        });
+
+        if (!response.ok) {
+            console.error('Translation API error:', response.status);
+            return null;
+        }
+
+        return await response.json() as TranslateApiResponse;
+    } catch (error) {
+        console.error('Translation API request failed:', error);
+        return null;
+    }
+}
+
+async function translateText(text: string, domain: string): Promise<{ translated: string, matchType: string } | null> {
+    if (!text) return null;
+
+    // Check local cache first
+    const cached = await getCachedTranslation(domain, text);
+    if (cached) {
+        return { translated: cached.targetText, matchType: cached.matchType };
+    }
+
+    // Call API
+    const apiResult = await translateViaApi(text, domain);
+    if (apiResult && apiResult.target_text && apiResult.target_text !== apiResult.source_text) {
+        // Cache the result
+        await setCachedTranslation(domain, text, {
+            sourceText: apiResult.source_text,
+            targetText: apiResult.target_text,
+            matchType: apiResult.match_type,
+            timestamp: Date.now()
+        });
+
+        return { translated: apiResult.target_text, matchType: apiResult.match_type };
+    }
+
+    return null;
+}
+
+// ==================== Batch Translation Handler ====================
+
+interface BatchTranslateRequest {
+    texts: string[];
+    domain: string;
+}
+
+interface BatchTranslateResponse {
+    results: Record<string, { targetText: string; matchType: string } | null>;
+    entriesToCache: TranslationCacheEntry[];
+}
+
+async function handleBatchTranslate(request: BatchTranslateRequest): Promise<BatchTranslateResponse> {
+    const { texts, domain } = request;
+    const results: Record<string, { targetText: string; matchType: string } | null> = {};
+    const entriesToCache: TranslationCacheEntry[] = [];
+
+    // Load memory cache
+    await loadCacheToMemory(domain);
+    const memoryCache = domainMemoryCaches.get(domain) || {};
+
+    // Check cache first
+    const uncachedTexts: string[] = [];
+    for (const text of texts) {
+        if (memoryCache[text]) {
+            results[text] = {
+                targetText: memoryCache[text].targetText,
+                matchType: memoryCache[text].matchType
+            };
+        } else {
+            uncachedTexts.push(text);
+        }
+    }
+
+    if (uncachedTexts.length === 0) {
+        return { results, entriesToCache };
+    }
+
+    // Call fast API
+    const fastResponse = await translateViaFastApi(uncachedTexts, domain);
+
+    if (fastResponse && fastResponse.results) {
+        for (const res of fastResponse.results) {
+            if (res.match_type !== 'noCache' && res.match_type !== 'tooLong' && res.target_text) {
+                results[res.source_text] = {
+                    targetText: res.target_text,
+                    matchType: res.match_type
+                };
+                entriesToCache.push({
+                    sourceText: res.source_text,
+                    targetText: res.target_text,
+                    matchType: res.match_type,
+                    timestamp: Date.now()
+                });
+            } else {
+                results[res.source_text] = null;
+            }
+        }
+
+        // Save to cache
+        if (entriesToCache.length > 0) {
+            setCachedTranslationsBatch(domain, entriesToCache).catch(console.error);
+        }
+    }
+
+    return { results, entriesToCache };
+}
+
+// ==================== Single Translation Handler ====================
+
+interface SingleTranslateRequest {
+    text: string;
+    domain: string;
+}
+
+async function handleSingleTranslate(request: SingleTranslateRequest): Promise<{ translated: string; matchType: string } | null> {
+    return translateText(request.text, request.domain);
+}
+
+// ==================== Stats Functions ====================
 
 function getURLDomain(url: string): string {
     try {
@@ -95,7 +371,6 @@ async function getAllCacheStats(): Promise<CacheStats[]> {
                     }
                 }
             }
-            // Sort by count descending
             stats.sort((a, b) => b.count - a.count);
             resolve(stats);
         });
@@ -111,6 +386,7 @@ async function clearAllTranslationCaches(): Promise<void> {
                     keysToRemove.push(key);
                 }
             }
+            domainMemoryCaches.clear();
             if (keysToRemove.length > 0) {
                 chrome.storage.local.remove(keysToRemove, () => {
                     resolve();
@@ -120,160 +396,6 @@ async function clearAllTranslationCaches(): Promise<void> {
             }
         });
     });
-}
-
-async function _checkVersion(): Promise<void> {
-    dataVersion = await _getJsonData("versions.json") as VersionData;
-    console.log("Localization Version ===", dataVersion);
-}
-
-async function _initLocalization(url: string, enableManual: boolean): Promise<ReplaceWord[]> {
-    console.log("url ===" + url);
-    // Check if translation is disabled first, before fetching any resources
-    if (enableManual != null && !enableManual) return [];
-
-    // TODO check version
-    let data: Record<string, any> = {};
-
-    if (url.includes("robertsspaceindustries.com")) {
-        data["zh-CN"] = await _getJsonData("zh-CN-rsi.json", { cacheKey: "zh-CN", versionKey: "rsi" });
-        data["concierge"] = await _getJsonData("concierge.json", { cacheKey: "concierge", versionKey: "concierge" });
-        data["orgs"] = await _getJsonData("orgs.json", { cacheKey: "orgs", versionKey: "orgs" });
-        data["address"] = await _getJsonData("addresses.json", { cacheKey: "addresses", versionKey: "addresses" });
-        data["hangar"] = await _getJsonData("hangar.json", { cacheKey: "hangar", versionKey: "hangar" });
-    } else if (url.includes("uexcorp.space")) {
-        data["UEX"] = await _getJsonData("zh-CN-uex.json", { cacheKey: "uex", versionKey: "uex" });
-    } else if (url.includes("erkul.games")) {
-        data["DPS"] = await _getJsonData("zh-CN-dps.json", { cacheKey: "dps", versionKey: "dps" });
-    } else if (enableManual) {
-        data["zh-CN"] = await _getJsonData("zh-CN-rsi.json", { cacheKey: "zh-CN", versionKey: "rsi" });
-        data["concierge"] = await _getJsonData("concierge.json", { cacheKey: "concierge", versionKey: "concierge" });
-        data["orgs"] = await _getJsonData("orgs.json", { cacheKey: "orgs", versionKey: "orgs" });
-        data["address"] = await _getJsonData("addresses.json", { cacheKey: "address", versionKey: "addresses" });
-        data["hangar"] = await _getJsonData("hangar.json", { cacheKey: "hangar", versionKey: "hangar" });
-        data["UEX"] = await _getJsonData("zh-CN-uex.json", { cacheKey: "uex", versionKey: "uex" });
-        data["DPS"] = await _getJsonData("zh-CN-dps.json", { cacheKey: "dps", versionKey: "dps" });
-    }
-    // update data
-    let replaceWords: ReplaceWord[] = [];
-
-    function addLocalizationResource(key: string): void {
-        replaceWords.push(...getLocalizationResource(data, key));
-    }
-
-    if (url.includes("robertsspaceindustries.com")) {
-        const org = "https://robertsspaceindustries.com/orgs";
-        const citizens = "https://robertsspaceindustries.com/citizens";
-        const organization = "https://robertsspaceindustries.com/account/organization";
-        const concierge = "https://robertsspaceindustries.com/account/concierge";
-        const referral = "https://robertsspaceindustries.com/account/referral-program";
-        const address = "https://robertsspaceindustries.com/account/addresses";
-        const hangar = "https://robertsspaceindustries.com/account/pledges";
-        const spectrum = "https://robertsspaceindustries.com/spectrum/community/";
-        if (url.startsWith(spectrum)) {
-            return [];
-        }
-        addLocalizationResource("zh-CN");
-        if (url.startsWith(org) || url.startsWith(citizens) || url.startsWith(organization)) {
-            replaceWords.push({ "word": 'members', "replacement": '名成员' });
-            addLocalizationResource("orgs");
-        }
-        if (url.startsWith(address)) {
-            addLocalizationResource("address");
-        }
-
-        if (url.startsWith(referral)) {
-            replaceWords.push(
-                { "word": 'Total recruits: ', "replacement": '总邀请数：' },
-                { "word": 'Prospects ', "replacement": '未完成的邀请' },
-                { "word": 'Recruits', "replacement": '已完成的邀请' }
-            );
-        }
-
-        if (url.startsWith(concierge)) {
-            replaceWords = [];
-            addLocalizationResource("concierge");
-        }
-
-        if (url.startsWith(hangar)) {
-            addLocalizationResource("hangar");
-        }
-    } else if (url.includes("uexcorp.space")) {
-        addLocalizationResource("UEX");
-    } else if (url.includes("erkul.games")) {
-        addLocalizationResource("DPS");
-    } else if (enableManual) {
-        addLocalizationResource("zh-CN");
-        replaceWords.push({ "word": 'members', "replacement": '名成员' });
-        addLocalizationResource("orgs");
-        addLocalizationResource("address");
-        replaceWords.push(
-            { "word": 'Total recruits: ', "replacement": '总邀请数：' },
-            { "word": 'Prospects ', "replacement": '未完成的邀请' },
-            { "word": 'Recruits', "replacement": '已完成的邀请' }
-        );
-        addLocalizationResource("concierge");
-        addLocalizationResource("hangar");
-        addLocalizationResource("UEX");
-        addLocalizationResource("DPS");
-    }
-    return replaceWords;
-}
-
-
-function getLocalizationResource(localizationResource: Record<string, any>, key: string): ReplaceWord[] {
-    const localizations: ReplaceWord[] = [];
-    const dict = localizationResource[key];
-    if (typeof dict === "object") {
-        for (const [k, v] of Object.entries(dict)) {
-            const trimmedKey = k
-                .toString()
-                .trim()
-                .toLowerCase()
-                .replace(/\xa0/g, ' ')
-                .replace(/\s{2,}/g, ' ');
-            localizations.push({ "word": trimmedKey, "replacement": String(v) });
-        }
-    }
-    return localizations;
-}
-
-interface JsonDataOptions {
-    cacheKey?: string;
-    versionKey?: string;
-}
-
-async function _getJsonData(fileName: string, options: JsonDataOptions = {}): Promise<any> {
-    const { cacheKey = "", versionKey = "" } = options;
-    const url = "https://ecdn.git.scbox.xkeyc.cn/SCToolBox/ScWeb_Chinese_Translate/raw/branch/main/json/locales/" + fileName;
-
-    // Get version from dataVersion by versionKey if needed
-    let version: string | null = null;
-    if (versionKey && versionKey !== "") {
-        if (dataVersion == null) {
-            await _checkVersion();
-        }
-        version = dataVersion?.[versionKey] ?? null;
-    }
-
-    if (cacheKey && cacheKey !== "") {
-        const localVersion = await getLocalData(`${cacheKey}_version`);
-        const data = await getLocalData(cacheKey);
-        if (data && typeof data === 'object' && Object.keys(data).length > 0 && localVersion === version) {
-            return data;
-        }
-    }
-    const startTime = new Date();
-    const response = await fetch(url, { method: 'GET', mode: 'cors' });
-    const endTime = new Date();
-    const data = await response.json();
-    if (cacheKey && cacheKey !== "") {
-        const timeDiff = endTime.getTime() - startTime.getTime();
-        console.log(`update ${cacheKey} v == ${version}  time == ${timeDiff / 1000}s`);
-        await setLocalData(cacheKey, data);
-        await setLocalData(`${cacheKey}_version`, version);
-    }
-    return data;
 }
 
 function getLocalData(key: string): Promise<any> {
@@ -298,12 +420,62 @@ function setLocalData(key: string, data: any): Promise<void> {
     });
 }
 
+// ==================== Message Handlers ====================
 
+chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
+    if (request.action === "_setTranslateSwitch") {
+        let domain = getURLDomain(request.url);
+        let switchKey = `_translate_switch_${domain}`;
+        setLocalData(switchKey, request.enableManual).then(() => {
+            console.log("SET translate switch ===", domain, "enableManual === ", request.enableManual);
+            sendResponse({ result: true });
+        });
+    } else if (request.action === "_getTranslateSwitch") {
+        let domain = getURLDomain(request.url);
+        let switchKey = `_translate_switch_${domain}`;
+        getLocalData(switchKey).then(enableManual => {
+            sendResponse({ enabled: enableManual === true });
+        });
+    } else if (request.action === "_getAllCacheStats") {
+        getAllCacheStats().then(stats => {
+            sendResponse({ stats });
+        });
+    } else if (request.action === "_clearDomainCache") {
+        const cacheKey = `translation_cache_${request.domain}`;
+        domainMemoryCaches.delete(request.domain);
+        chrome.storage.local.remove(cacheKey, () => {
+            sendResponse({ success: true });
+        });
+    } else if (request.action === "_clearAllCache") {
+        clearAllTranslationCaches().then(() => {
+            sendResponse({ success: true });
+        });
+    } else if (request.action === "_translationStatusChanged") {
+        updateContextMenuTitle(request.isTranslating);
+    } else if (request.action === "_translateBatch") {
+        // Batch translation request from content script
+        handleBatchTranslate(request).then(response => {
+            sendResponse(response);
+        });
+    } else if (request.action === "_translateSingle") {
+        // Single translation request from content script
+        handleSingleTranslate(request).then(response => {
+            sendResponse(response);
+        });
+    } else if (request.action === "_loadCache") {
+        // Load cache to memory and return it
+        loadCacheToMemory(request.domain).then(cache => {
+            sendResponse({ cache });
+        });
+    }
+    return true;
+});
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
     console.log("contextMenus", info, tab);
     if (tab && tab.id !== undefined) {
         chrome.tabs.sendMessage(tab.id, { action: "_toggleTranslation" }).then((_) => {
+            // Status will be updated via _translationStatusChanged message
         });
     }
 });
