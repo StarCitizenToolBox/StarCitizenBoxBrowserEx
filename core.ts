@@ -401,12 +401,13 @@ function cleanupPendingNode(node: Text, explicitParent?: Element | null): void {
 
 // ==================== Translation via Background ====================
 
-async function translateViaBackground(texts: string[]): Promise<Record<string, { targetText: string; matchType: string } | null>> {
+async function translateViaBackground(texts: string[], use_llm: boolean = false): Promise<Record<string, { targetText: string; matchType: string } | null>> {
     return new Promise((resolve) => {
         chrome.runtime.sendMessage({
             action: "_translateBatch",
             texts: texts,
-            domain: getCurrentDomain()
+            domain: getCurrentDomain(),
+            use_llm: use_llm
         }, (response) => {
             if (response && response.results) {
                 // Update local memory cache with new entries
@@ -426,12 +427,13 @@ async function translateViaBackground(texts: string[]): Promise<Record<string, {
     });
 }
 
-async function translateSingleViaBackground(text: string): Promise<{ translated: string; matchType: string } | null> {
+async function translateSingleViaBackground(text: string, output_terms: boolean = false): Promise<{ translated: string; matchType: string } | null> {
     return new Promise((resolve) => {
         chrome.runtime.sendMessage({
             action: "_translateSingle",
             text: text,
-            domain: getCurrentDomain()
+            domain: getCurrentDomain(),
+            output_terms: output_terms
         }, (response) => {
             if (response && response.translated) {
                 // Update local memory cache
@@ -555,8 +557,28 @@ async function processBatchChunk(batch: Array<{ node: Text; originalText: string
     }
 
     try {
-        // Call background for batch translation
-        const results = await translateViaBackground(uniqueTexts);
+        // Step 1: Call background for fast batch translation (use_llm = false)
+        let results = await translateViaBackground(uniqueTexts, false);
+
+        // Identify misses
+        const misses: string[] = [];
+        for (const text of uniqueTexts) {
+            if (!results[text]) {
+                misses.push(text);
+            }
+        }
+
+        // Step 2: Handle misses
+        if (misses.length > 0) {
+            const shortMisses = misses.filter(t => t.length < MAX_FAST_TEXT_LENGTH);
+
+            if (shortMisses.length > 0) {
+                // Retry short texts with use_llm = true
+                const llmResults = await translateViaBackground(shortMisses, true);
+                // Merge results
+                results = { ...results, ...llmResults };
+            }
+        }
 
         let slowItems: typeof validItems = [];
 

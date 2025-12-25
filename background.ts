@@ -186,7 +186,7 @@ async function setCachedTranslationsBatch(domain: string, entries: TranslationCa
 
 // ==================== API Calls ====================
 
-async function translateViaFastApi(texts: string[], domain: string): Promise<FastTranslateApiResponse | null> {
+async function translateViaFastApi(texts: string[], domain: string, use_llm: boolean = false): Promise<FastTranslateApiResponse | null> {
     try {
         const response = await fetch(`${TRANSLATE_API_BASE_URL}/translate/fast`, {
             method: 'POST',
@@ -197,7 +197,8 @@ async function translateViaFastApi(texts: string[], domain: string): Promise<Fas
                 texts: texts,
                 source_lang: 'en',
                 target_lang: 'zh-CN',
-                domain: domain
+                domain: domain,
+                use_llm: use_llm
             })
         });
 
@@ -212,7 +213,7 @@ async function translateViaFastApi(texts: string[], domain: string): Promise<Fas
     }
 }
 
-async function translateViaApi(text: string, domain: string): Promise<TranslateApiResponse | null> {
+async function translateViaApi(text: string, domain: string, output_terms: boolean = false): Promise<TranslateApiResponse | null> {
     try {
         const response = await fetch(`${TRANSLATE_API_BASE_URL}/translate`, {
             method: 'POST',
@@ -223,7 +224,8 @@ async function translateViaApi(text: string, domain: string): Promise<TranslateA
                 text: text,
                 source_lang: 'en',
                 target_lang: 'zh-CN',
-                domain: domain
+                domain: domain,
+                output_terms: output_terms
             })
         });
 
@@ -239,7 +241,7 @@ async function translateViaApi(text: string, domain: string): Promise<TranslateA
     }
 }
 
-async function translateText(text: string, domain: string): Promise<{ translated: string, matchType: string } | null> {
+async function translateText(text: string, domain: string, output_terms: boolean = false): Promise<{ translated: string, matchType: string } | null> {
     if (!text) return null;
 
     // Check local cache first
@@ -249,7 +251,7 @@ async function translateText(text: string, domain: string): Promise<{ translated
     }
 
     // Call API
-    const apiResult = await translateViaApi(text, domain);
+    const apiResult = await translateViaApi(text, domain, output_terms);
     if (apiResult && apiResult.target_text && apiResult.target_text !== apiResult.source_text) {
         // Cache the result
         await setCachedTranslation(domain, text, {
@@ -270,6 +272,7 @@ async function translateText(text: string, domain: string): Promise<{ translated
 interface BatchTranslateRequest {
     texts: string[];
     domain: string;
+    use_llm?: boolean;
 }
 
 interface BatchTranslateResponse {
@@ -278,7 +281,7 @@ interface BatchTranslateResponse {
 }
 
 async function handleBatchTranslate(request: BatchTranslateRequest): Promise<BatchTranslateResponse> {
-    const { texts, domain } = request;
+    const { texts, domain, use_llm } = request;
     const results: Record<string, { targetText: string; matchType: string } | null> = {};
     const entriesToCache: TranslationCacheEntry[] = [];
 
@@ -304,7 +307,7 @@ async function handleBatchTranslate(request: BatchTranslateRequest): Promise<Bat
     }
 
     // Call fast API
-    const fastResponse = await translateViaFastApi(uncachedTexts, domain);
+    const fastResponse = await translateViaFastApi(uncachedTexts, domain, use_llm);
 
     if (fastResponse && fastResponse.results) {
         for (const res of fastResponse.results) {
@@ -338,10 +341,11 @@ async function handleBatchTranslate(request: BatchTranslateRequest): Promise<Bat
 interface SingleTranslateRequest {
     text: string;
     domain: string;
+    output_terms?: boolean;
 }
 
 async function handleSingleTranslate(request: SingleTranslateRequest): Promise<{ translated: string; matchType: string } | null> {
-    return translateText(request.text, request.domain);
+    return translateText(request.text, request.domain, request.output_terms);
 }
 
 // ==================== Stats Functions ====================
