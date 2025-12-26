@@ -675,8 +675,8 @@ async function runSlowWorker() {
                 continue;
             }
 
-            // Skip single translation API if user is not logged in or domain is not whitelisted
-            // This avoids unnecessary API calls for users who can't use LLM translation
+            // Skip LLM translation if user is not logged in or domain is not whitelisted
+            // Since slow queue items are long texts that require LLM translation
             if (!isUserLoggedIn || !isDomainWhitelisted) {
                 cleanupPendingNode(item.node, item.parent);
                 continue;
