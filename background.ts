@@ -64,6 +64,37 @@ interface FastTranslateApiResponse {
     matched: number;
 }
 
+// Domain whitelist check API response
+interface DomainCheckResponse {
+    domain: string;
+    whitelisted: boolean;
+    description?: string;
+    is_general?: boolean;
+}
+
+// Domains that have translation enabled by default (when user hasn't set a preference)
+const DEFAULT_AUTO_ENABLE_DOMAINS = new Set([
+    "robertsspaceindustries.com",  // Star Citizen official website
+    "uexcorp.space",               // UEX Corp - Star Citizen trading and market data
+    "erkul.games",                 // A Game weapons data website
+    "spviewer.eu",                 // A Game ship data website
+    "sc-trade.tools"               // A Game Business transaction roadmap website
+]);
+
+// Check if domain matches any default auto-enable domain (supports subdomains)
+function isDomainAutoEnabled(domain: string): boolean {
+    if (DEFAULT_AUTO_ENABLE_DOMAINS.has(domain)) {
+        return true;
+    }
+    // Check if it's a subdomain of any default domain
+    for (const defaultDomain of DEFAULT_AUTO_ENABLE_DOMAINS) {
+        if (domain.endsWith('.' + defaultDomain)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 // Per-domain memory cache
 const domainMemoryCaches = new Map<string, Record<string, TranslationCacheEntry>>();
 
@@ -455,7 +486,14 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
         let domain = getURLDomain(request.url);
         let switchKey = `_translate_switch_${domain}`;
         getLocalData(switchKey).then(enableManual => {
-            sendResponse({ enabled: enableManual === true });
+            if (enableManual === null) {
+                // User hasn't set a preference, check if domain is in default auto-enable list
+                const autoEnabled = isDomainAutoEnabled(domain);
+                sendResponse({ enabled: autoEnabled, isDefault: true });
+            } else {
+                // User has explicitly set a preference
+                sendResponse({ enabled: enableManual === true, isDefault: false });
+            }
         });
     } else if (request.action === "_getAllCacheStats") {
         getAllCacheStats().then(stats => {
@@ -544,15 +582,85 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
             }
             sendResponse({ profile });
         });
+    } else if (request.action === "_checkDomainWhitelist") {
+        // Check domain whitelist for content scripts
+        checkDomainWhitelist(request.domain).then(response => {
+            if (response) {
+                sendResponse(response);
+            } else {
+                // API failed, treat as whitelisted to not block translation
+                sendResponse({ domain: request.domain, whitelisted: true, is_general: false });
+            }
+        });
     }
     return true;
 });
 
-chrome.contextMenus.onClicked.addListener((info, tab) => {
-    console.log("contextMenus", info, tab);
-    if (tab && tab.id !== undefined) {
-        chrome.tabs.sendMessage(tab.id, { action: "_toggleTranslation" }).then((_) => {
-            // Status will be updated via _translationStatusChanged message
+// Check domain whitelist via API
+async function checkDomainWhitelist(domain: string): Promise<DomainCheckResponse | null> {
+    try {
+        const headers = await getAuthHeaders();
+        const response = await fetch(`${TRANSLATE_API_BASE_URL}/domain/check?domain=${encodeURIComponent(domain)}`, {
+            method: 'GET',
+            headers: headers
         });
+
+        if (!response.ok) {
+            console.error('Domain check API error:', response.status);
+            return null;
+        }
+
+        return await response.json() as DomainCheckResponse;
+    } catch (error) {
+        console.error('Domain check API request failed:', error);
+        return null;
+    }
+}
+
+chrome.contextMenus.onClicked.addListener(async (info, tab) => {
+    console.log("contextMenus", info, tab);
+    if (tab && tab.id !== undefined && tab.url) {
+        const tabId = tab.id;
+
+        // First check current translation status
+        try {
+            const statusResponse = await chrome.tabs.sendMessage(tabId, { action: "_getTranslationStatus" });
+
+            // If already translating, just toggle off without checking whitelist
+            if (statusResponse && statusResponse.isTranslating) {
+                chrome.tabs.sendMessage(tabId, { action: "_toggleTranslation" });
+                return;
+            }
+        } catch (e) {
+            // Content script might not be ready, continue anyway
+        }
+
+        // For starting translation, check domain whitelist
+        const domain = getURLDomain(tab.url);
+        const domainCheck = await checkDomainWhitelist(domain);
+
+        if (domainCheck === null) {
+            // API failed, proceed anyway (treat as whitelisted)
+            chrome.tabs.sendMessage(tabId, {
+                action: "_startTranslationWithWhitelist",
+                isWhitelisted: true
+            });
+            return;
+        }
+
+        if (domainCheck.whitelisted || domainCheck.is_general) {
+            // Domain is whitelisted, proceed directly with whitelist flag
+            chrome.tabs.sendMessage(tabId, {
+                action: "_startTranslationWithWhitelist",
+                isWhitelisted: true
+            });
+        } else {
+            // Domain not whitelisted, ask for confirmation
+            chrome.tabs.sendMessage(tabId, {
+                action: "_showDomainConfirmation",
+                domain: domain,
+                description: domainCheck.description || ''
+            });
+        }
     }
 });

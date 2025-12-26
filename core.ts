@@ -10,6 +10,8 @@ const CHINESE_REGEX = /[\u4e00-\u9fff]/;
 
 // State
 let SCLocalizationTranslating = false;
+let isDomainWhitelisted = true; // Whether current domain is whitelisted (affects LLM usage)
+let isUserLoggedIn = false; // Whether user is logged in (affects LLM availability)
 let memoryCache: Record<string, { targetText: string; matchType: string }> | null = null;
 let batchQueue: Array<{ node: Text; originalText: string; parent: Element | null }> = [];
 let slowQueue: Array<{ node: Text; originalText: string; parent: Element | null }> = [];
@@ -155,6 +157,10 @@ function _checkTranslationState() {
         url: window.location.href
     }, (response) => {
         if (response && response.enabled) {
+            // If this is a default auto-enabled domain, it's whitelisted
+            if (response.isDefault) {
+                isDomainWhitelisted = true;
+            }
             startTranslation();
         }
     });
@@ -568,8 +574,8 @@ async function processBatchChunk(batch: Array<{ node: Text; originalText: string
             }
         }
 
-        // Step 2: Handle misses
-        if (misses.length > 0) {
+        // Step 2: Handle misses - only use LLM if user is logged in AND domain is whitelisted
+        if (misses.length > 0 && isUserLoggedIn && isDomainWhitelisted) {
             const shortMisses = misses.filter(t => t.length < MAX_FAST_TEXT_LENGTH);
 
             if (shortMisses.length > 0) {
@@ -669,6 +675,13 @@ async function runSlowWorker() {
                 continue;
             }
 
+            // Skip single translation API if user is not logged in or domain is not whitelisted
+            // This avoids unnecessary API calls for users who can't use LLM translation
+            if (!isUserLoggedIn || !isDomainWhitelisted) {
+                cleanupPendingNode(item.node, item.parent);
+                continue;
+            }
+
             // Deduplicate
             let translationPromise = pendingRequests.get(text);
             if (!translationPromise) {
@@ -713,11 +726,29 @@ async function runSlowWorker() {
 
 // ==================== Translation Control ====================
 
+// Check user login status from background
+async function checkLoginStatus(): Promise<boolean> {
+    return new Promise((resolve) => {
+        chrome.runtime.sendMessage({
+            action: "_checkLoginStatus"
+        }, (response) => {
+            if (chrome.runtime.lastError || !response) {
+                resolve(false);
+                return;
+            }
+            resolve(response.loggedIn === true);
+        });
+    });
+}
+
 async function startTranslation() {
     if (SCLocalizationTranslating) return;
 
     SCLocalizationTranslating = true;
     window.postMessage({ type: 'TOGGLED-SC-BOX-TRANSLATE', action: 'on' }, '*');
+
+    // Check user login status for LLM availability
+    isUserLoggedIn = await checkLoginStatus();
 
     // Load cache from background
     await loadCacheFromBackground();
@@ -730,6 +761,8 @@ async function startTranslation() {
 
 function stopTranslation(): Promise<{ success: boolean }> {
     SCLocalizationTranslating = false;
+    isDomainWhitelisted = true; // Reset whitelist status
+    isUserLoggedIn = false; // Reset login status
     batchQueue = [];
     slowQueue = [];
     pendingRequests.clear();
@@ -783,6 +816,184 @@ function notifyTranslationStatusChange() {
     });
 }
 
+// Show domain confirmation dialog for non-whitelisted domains
+function showDomainConfirmation(domain: string, _description: string) {
+    // Check if dialog already exists
+    if (document.getElementById('sc-domain-confirm-overlay')) return;
+
+    // Create overlay
+    const overlay = document.createElement('div');
+    overlay.id = 'sc-domain-confirm-overlay';
+    overlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(4px);
+        z-index: 999999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        animation: sc-fade-in 0.2s ease;
+    `;
+
+    // Create dialog
+    const dialog = document.createElement('div');
+    dialog.style.cssText = `
+        background: linear-gradient(145deg, #1a1a2e, #16213e);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 16px;
+        padding: 24px 32px;
+        max-width: 420px;
+        width: 90%;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        animation: sc-slide-up 0.3s ease;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    `;
+
+    // Icon
+    const icon = document.createElement('div');
+    icon.innerHTML = `
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="12" r="10" stroke="#f59e0b" stroke-width="2"/>
+            <path d="M12 8v4" stroke="#f59e0b" stroke-width="2" stroke-linecap="round"/>
+            <circle cx="12" cy="16" r="1" fill="#f59e0b"/>
+        </svg>
+    `;
+    icon.style.cssText = `text-align: center; margin-bottom: 16px;`;
+
+    // Title
+    const title = document.createElement('h3');
+    title.textContent = '翻译提示';
+    title.style.cssText = `
+        color: #fff;
+        font-size: 20px;
+        font-weight: 600;
+        margin: 0 0 12px 0;
+        text-align: center;
+    `;
+
+    // Message
+    const message = document.createElement('p');
+    message.innerHTML = `当前网站 <strong style="color: #60a5fa;">${domain}</strong> 未进行翻译优化，翻译效果可能受限。<br><br>是否继续开启翻译？`;
+    message.style.cssText = `
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 14px;
+        line-height: 1.6;
+        margin: 0 0 24px 0;
+        text-align: center;
+    `;
+
+    // Button container
+    const buttonContainer = document.createElement('div');
+    buttonContainer.style.cssText = `
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+    `;
+
+    // Cancel button
+    const cancelBtn = document.createElement('button');
+    cancelBtn.textContent = '取消';
+    cancelBtn.style.cssText = `
+        padding: 10px 24px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 8px;
+        background: transparent;
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.2s;
+    `;
+    cancelBtn.onmouseover = () => {
+        cancelBtn.style.background = 'rgba(255, 255, 255, 0.1)';
+    };
+    cancelBtn.onmouseout = () => {
+        cancelBtn.style.background = 'transparent';
+    };
+
+    // Confirm button
+    const confirmBtn = document.createElement('button');
+    confirmBtn.textContent = '继续翻译';
+    confirmBtn.style.cssText = `
+        padding: 10px 24px;
+        border: none;
+        border-radius: 8px;
+        background: linear-gradient(135deg, #3b82f6, #2563eb);
+        color: #fff;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+    `;
+    confirmBtn.onmouseover = () => {
+        confirmBtn.style.transform = 'translateY(-1px)';
+        confirmBtn.style.boxShadow = '0 4px 12px rgba(59, 130, 246, 0.4)';
+    };
+    confirmBtn.onmouseout = () => {
+        confirmBtn.style.transform = 'translateY(0)';
+        confirmBtn.style.boxShadow = 'none';
+    };
+
+    // Add keyframe animations
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes sc-fade-in {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes sc-slide-up {
+            from { 
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to { 
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    `;
+    document.head.appendChild(style);
+
+    // Close dialog function
+    const closeDialog = () => {
+        overlay.style.animation = 'sc-fade-in 0.2s ease reverse';
+        setTimeout(() => {
+            overlay.remove();
+            style.remove();
+        }, 180);
+    };
+
+    // Event handlers
+    cancelBtn.onclick = closeDialog;
+    overlay.onclick = (e) => {
+        if (e.target === overlay) closeDialog();
+    };
+    confirmBtn.onclick = () => {
+        closeDialog();
+        // Start translation after confirmation (with LLM disabled for non-whitelisted domain)
+        isDomainWhitelisted = false;
+        startTranslation();
+        _saveLocalizationSwitchState(true);
+        notifyTranslationStatusChange();
+    };
+
+    // Assemble dialog
+    buttonContainer.appendChild(cancelBtn);
+    buttonContainer.appendChild(confirmBtn);
+    dialog.appendChild(icon);
+    dialog.appendChild(title);
+    dialog.appendChild(message);
+    dialog.appendChild(buttonContainer);
+    overlay.appendChild(dialog);
+    document.body.appendChild(overlay);
+
+    // Focus confirm button
+    confirmBtn.focus();
+}
+
 // ==================== Initialize ====================
 
 InitWebLocalization();
@@ -791,6 +1002,17 @@ InitWebLocalization();
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === "_toggleTranslation") {
         toggleTranslation();
+    } else if (request.action === "_startTranslationWithWhitelist") {
+        // Start translation with explicit whitelist status
+        if (!SCLocalizationTranslating) {
+            isDomainWhitelisted = request.isWhitelisted === true;
+            startTranslation();
+            _saveLocalizationSwitchState(true);
+            notifyTranslationStatusChange();
+        }
+    } else if (request.action === "_showDomainConfirmation") {
+        // Show confirmation dialog for non-whitelisted domains
+        showDomainConfirmation(request.domain, request.description || '');
     } else if (request.action === "_getTranslationStatus") {
         sendResponse({ isTranslating: SCLocalizationTranslating });
         return false;
@@ -819,8 +1041,36 @@ window.addEventListener('message', async (event) => {
     const { action } = event.data;
 
     if (action === 'translate') {
-        startTranslation();
-        _saveLocalizationSwitchState(true);
+        // Check whitelist before starting translation (same as context menu)
+        if (SCLocalizationTranslating) {
+            // Already translating, ignore
+            return;
+        }
+
+        // Request whitelist check from background
+        chrome.runtime.sendMessage({
+            action: "_checkDomainWhitelist",
+            domain: getCurrentDomain()
+        }, (response) => {
+            if (chrome.runtime.lastError || !response) {
+                // API failed, proceed anyway
+                startTranslation();
+                _saveLocalizationSwitchState(true);
+                notifyTranslationStatusChange();
+                return;
+            }
+
+            if (response.whitelisted || response.is_general) {
+                // Domain is whitelisted, proceed directly
+                isDomainWhitelisted = true;
+                startTranslation();
+                _saveLocalizationSwitchState(true);
+                notifyTranslationStatusChange();
+            } else {
+                // Domain not whitelisted, show confirmation
+                showDomainConfirmation(getCurrentDomain(), response.description || '');
+            }
+        });
     } else if (action === 'undoTranslate') {
         await stopTranslation();
         _saveLocalizationSwitchState(false);
