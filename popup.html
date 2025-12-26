@@ -3,24 +3,36 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>星际公民盒子浏览器拓展</title>
+    <title>SC汉化盒子 浏览器拓展</title>
     <style>
+        /* Light mode (default) */
         :root {
-            --bg-primary: #0a0e17;
-            --bg-secondary: #141b2d;
-            --bg-card: rgba(30, 41, 59, 0.8);
-            --bg-card-hover: rgba(51, 65, 85, 0.9);
-            --accent-primary: #3b82f6;
-            --accent-secondary: #60a5fa;
-            --accent-gradient: linear-gradient(135deg, #3b82f6, #8b5cf6);
-            --text-primary: #f8fafc;
-            --text-secondary: #94a3b8;
-            --text-muted: #64748b;
-            --border-color: rgba(148, 163, 184, 0.1);
-            --success: #22c55e;
-            --warning: #f59e0b;
-            --danger: #ef4444;
-            --shadow-glow: 0 0 20px rgba(59, 130, 246, 0.3);
+            --bg-primary: #ffffff;
+            --bg-secondary: #f3f4f6;
+            --bg-card: #e5e7eb;
+            --accent: #2563eb;
+            --text-primary: #111827;
+            --text-secondary: #4b5563;
+            --text-muted: #9ca3af;
+            --border: #d1d5db;
+            --danger: #dc2626;
+            --success: #16a34a;
+        }
+
+        /* Dark mode */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-primary: #1a1a2e;
+                --bg-secondary: #16213e;
+                --bg-card: #1f2937;
+                --accent: #3b82f6;
+                --text-primary: #e5e7eb;
+                --text-secondary: #9ca3af;
+                --text-muted: #6b7280;
+                --border: #374151;
+                --danger: #ef4444;
+                --success: #22c55e;
+            }
         }
 
         * {
@@ -30,297 +42,132 @@
         }
 
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: var(--bg-primary);
-            background-image:
-                radial-gradient(ellipse at top, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
-                radial-gradient(ellipse at bottom right, rgba(139, 92, 246, 0.08) 0%, transparent 50%);
             color: var(--text-primary);
-            min-width: 320px;
-            padding: 0;
-            margin: 0;
-        }
-
-        .container {
-            padding: 16px;
+            width: 320px;
+            font-size: 13px;
         }
 
         /* Header */
         .header {
-            text-align: center;
-            padding: 20px 16px;
-            background: linear-gradient(180deg, rgba(59, 130, 246, 0.15) 0%, transparent 100%);
-            border-bottom: 1px solid var(--border-color);
-            margin-bottom: 16px;
+            padding: 12px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
         }
 
-        .header h1 {
-            font-size: 18px;
+        .header-title {
+            font-size: 14px;
             font-weight: 600;
-            background: var(--accent-gradient);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: 4px;
         }
 
-        .header p {
+        .header-link {
             font-size: 12px;
-            color: var(--text-secondary);
-        }
-
-        .header a {
-            color: var(--accent-secondary);
+            color: var(--accent);
             text-decoration: none;
-            transition: color 0.2s;
         }
 
-        .header a:hover {
-            color: var(--accent-primary);
+        .header-link:hover {
             text-decoration: underline;
         }
 
-        /* Section Headers */
-        .section-header {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 12px;
-            padding-bottom: 8px;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .section-header h2 {
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--text-primary);
-        }
-
-        .section-header .icon {
-            width: 20px;
-            height: 20px;
-            color: var(--accent-primary);
-        }
-
-        /* Cards */
-        .card {
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 14px;
-            margin-bottom: 12px;
-            transition: all 0.3s ease;
-            backdrop-filter: blur(10px);
-        }
-
-        .card:hover {
-            background: var(--bg-card-hover);
-            border-color: rgba(59, 130, 246, 0.3);
-            box-shadow: var(--shadow-glow);
-            transform: translateY(-2px);
-        }
-
-        .card a {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            text-decoration: none;
-            color: inherit;
-        }
-
-        .card-icon {
-            width: 48px;
-            height: 48px;
-            border-radius: 10px;
+        /* User Bar - Compact */
+        .user-bar {
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border);
             background: var(--bg-secondary);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-            overflow: hidden;
         }
 
-        .card-icon img,
-        .card-icon svg {
+        .user-bar-content {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .user-avatar {
             width: 32px;
             height: 32px;
-            object-fit: contain;
+            border-radius: 50%;
+            border: 2px solid var(--accent);
         }
 
-        .card-content {
+        .user-info {
             flex: 1;
             min-width: 0;
         }
 
-        .card-title {
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--text-primary);
-            margin-bottom: 4px;
-        }
-
-        .card-description {
-            font-size: 12px;
-            color: var(--text-secondary);
-            line-height: 1.4;
-        }
-
-        .card-arrow {
-            color: var(--text-muted);
-            transition: transform 0.2s, color 0.2s;
-        }
-
-        .card:hover .card-arrow {
-            color: var(--accent-primary);
-            transform: translateX(4px);
-        }
-
-        /* Cache Section */
-        .cache-section {
-            margin-top: 20px;
-        }
-
-        .cache-stats {
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 14px;
-            margin-bottom: 12px;
-        }
-
-        .cache-total {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding-bottom: 12px;
-            margin-bottom: 12px;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .cache-total-label {
-            font-size: 13px;
-            color: var(--text-secondary);
-        }
-
-        .cache-total-value {
-            font-size: 20px;
-            font-weight: 700;
-            background: var(--accent-gradient);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .cache-domains {
-            max-height: 200px;
-            overflow-y: auto;
-        }
-
-        .cache-domain-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px 0;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .cache-domain-item:last-child {
-            border-bottom: none;
-        }
-
-        .cache-domain-name {
-            font-size: 12px;
-            color: var(--text-primary);
-            flex: 1;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-
-        .cache-domain-count {
-            font-size: 12px;
-            color: var(--text-secondary);
-            background: var(--bg-secondary);
-            padding: 2px 8px;
-            border-radius: 10px;
-            margin-left: 8px;
-        }
-
-        .cache-domain-clear {
-            background: none;
-            border: none;
-            color: var(--text-muted);
-            cursor: pointer;
-            padding: 4px;
-            margin-left: 8px;
-            border-radius: 4px;
-            transition: all 0.2s;
-        }
-
-        .cache-domain-clear:hover {
-            color: var(--danger);
-            background: rgba(239, 68, 68, 0.1);
-        }
-
-        .cache-actions {
-            display: flex;
-            gap: 8px;
-        }
-
-        .btn {
-            flex: 1;
-            padding: 10px 16px;
-            border-radius: 8px;
+        .user-name {
             font-size: 13px;
             font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            border: none;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
-        .btn-primary {
-            background: var(--accent-gradient);
+        .user-credits {
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+
+        .user-credits span {
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        .btn-small {
+            padding: 4px 10px;
+            font-size: 11px;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .btn-small:hover {
+            opacity: 0.8;
+        }
+
+        .btn-logout {
+            background: transparent;
+            color: var(--text-muted);
+            border: 1px solid var(--border);
+        }
+
+        .btn-login {
+            background: var(--accent);
             color: white;
         }
 
-        .btn-primary:hover {
-            transform: translateY(-1px);
-            box-shadow: var(--shadow-glow);
-        }
-
-        .btn-danger {
-            background: rgba(239, 68, 68, 0.15);
-            color: var(--danger);
-            border: 1px solid rgba(239, 68, 68, 0.3);
-        }
-
-        .btn-danger:hover {
-            background: rgba(239, 68, 68, 0.25);
-        }
-
-        .btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        /* Loading state */
-        .loading {
+        /* Login prompt - Compact */
+        .login-bar {
             display: flex;
             align-items: center;
-            justify-content: center;
-            padding: 20px;
+            justify-content: space-between;
+        }
+
+        .login-text {
+            font-size: 12px;
             color: var(--text-secondary);
         }
 
-        .loading-spinner {
-            width: 20px;
-            height: 20px;
-            border: 2px solid var(--border-color);
-            border-top-color: var(--accent-primary);
+        /* Loading */
+        .user-loading {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .spinner {
+            width: 14px;
+            height: 14px;
+            border: 2px solid var(--border);
+            border-top-color: var(--accent);
             border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-right: 8px;
+            animation: spin 0.8s linear infinite;
         }
 
         @keyframes spin {
@@ -329,48 +176,188 @@
             }
         }
 
-        /* Empty state */
+        /* Content */
+        .content {
+            padding: 12px;
+        }
+
+        .section-title {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        /* Links */
+        .link-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: 16px;
+        }
+
+        .link-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 10px;
+            background: var(--bg-card);
+            border-radius: 6px;
+            text-decoration: none;
+            color: inherit;
+            transition: background 0.2s;
+        }
+
+        .link-item:hover {
+            background: var(--bg-secondary);
+        }
+
+        .link-icon {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .link-icon img {
+            width: 20px;
+            height: 20px;
+            object-fit: contain;
+        }
+
+        .link-icon svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .link-text {
+            flex: 1;
+        }
+
+        .link-title {
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .link-desc {
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+
+        /* Cache Section */
+        .cache-section {
+            background: var(--bg-card);
+            border-radius: 6px;
+            padding: 10px;
+        }
+
+        .cache-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .cache-total {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .cache-total strong {
+            color: var(--accent);
+        }
+
+        .cache-actions {
+            display: flex;
+            gap: 6px;
+        }
+
+        .cache-btn {
+            padding: 3px 8px;
+            font-size: 11px;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+        }
+
+        .cache-btn-refresh {
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+        }
+
+        .cache-btn-clear {
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--danger);
+        }
+
+        .cache-list {
+            max-height: 120px;
+            overflow-y: auto;
+        }
+
+        .cache-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 4px 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 11px;
+        }
+
+        .cache-item:last-child {
+            border-bottom: none;
+        }
+
+        .cache-domain {
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: var(--text-secondary);
+        }
+
+        .cache-count {
+            margin-left: 8px;
+            color: var(--text-muted);
+        }
+
+        .cache-delete {
+            margin-left: 6px;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 2px;
+        }
+
+        .cache-delete:hover {
+            color: var(--danger);
+        }
+
         .empty-state {
             text-align: center;
-            padding: 20px;
+            padding: 12px;
             color: var(--text-muted);
-            font-size: 13px;
+            font-size: 11px;
         }
 
-        /* Scrollbar */
-        .cache-domains::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        .cache-domains::-webkit-scrollbar-track {
-            background: var(--bg-secondary);
-            border-radius: 3px;
-        }
-
-        .cache-domains::-webkit-scrollbar-thumb {
-            background: var(--text-muted);
-            border-radius: 3px;
-        }
-
-        .cache-domains::-webkit-scrollbar-thumb:hover {
-            background: var(--text-secondary);
-        }
-
-        /* Toast notification */
+        /* Toast */
         .toast {
             position: fixed;
-            bottom: 20px;
+            bottom: 12px;
             left: 50%;
-            transform: translateX(-50%) translateY(100px);
+            transform: translateX(-50%) translateY(50px);
             background: var(--bg-card);
-            border: 1px solid var(--accent-primary);
-            color: var(--text-primary);
-            padding: 10px 20px;
-            border-radius: 8px;
-            font-size: 13px;
+            border: 1px solid var(--border);
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 12px;
             opacity: 0;
-            transition: all 0.3s ease;
-            z-index: 1000;
+            transition: all 0.2s;
         }
 
         .toast.show {
@@ -381,132 +368,116 @@
         .toast.success {
             border-color: var(--success);
         }
+
+        /* Scrollbar */
+        .cache-list::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .cache-list::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+        }
+
+        .cache-list::-webkit-scrollbar-thumb {
+            background: var(--text-muted);
+            border-radius: 2px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
     </style>
 </head>
 
 <body>
-
+    <!-- Header -->
     <div class="header">
-        <h1>星际公民盒子浏览器拓展</h1>
-        <p>
-            <a href="https://github.com/xkeyC/StarCitizenBoxBrowserEx" target="_blank">GitHub</a>
-            · 为星际公民网站及工具站提供汉化
-        </p>
+        <span class="header-title">SC汉化盒子 网页翻译</span>
+        <a href="https://github.com/xkeyC/StarCitizenBoxBrowserEx" target="_blank" class="header-link">GitHub</a>
     </div>
 
-    <div class="container">
-        <!-- Quick Links Section -->
-        <div class="section-header">
-            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
-            </svg>
-            <h2>快速链接</h2>
+    <!-- User Bar -->
+    <div class="user-bar" id="user-section">
+        <!-- Loading -->
+        <div class="user-loading" id="user-loading">
+            <div class="spinner"></div>
+            <span>加载中...</span>
         </div>
 
-        <div class="card">
-            <a href="https://robertsspaceindustries.com/" target="_blank">
-                <div class="card-icon">
-                    <svg viewBox="0 0 56 16" fill="currentColor">
-                        <path fill-rule="evenodd" clip-rule="evenodd"
-                            d="M16.0716 0C17.111 0 17.7697 0.734004 17.5824 1.65153L17.5516 1.77773L16.4646 5.68023C16.2499 6.48564 15.6763 7.15995 14.9845 7.52983L14.8228 7.6097L11.6546 9.08403L12.3485 11.8374C12.4102 12.0494 12.6179 12.227 12.8583 12.2638L12.9497 12.2708H15.0308L14.0135 16H10.7299C9.96799 16 9.22678 15.4621 8.98803 14.8024L8.94926 14.6774L7.95482 10.8185L5.17986 12.1191L4.11629 16H0L4.34743 0H16.0716ZM30.028 0L30.0255 0.00849999L29.0084 3.71374L29.0048 3.72704H29.0004L22.8229 3.71374C22.4538 3.71374 22.1768 3.84407 22.0843 4.19052C22.0024 4.49868 22.1027 4.73832 22.3854 4.94011L22.4999 5.01406L29.1008 9.10927C29.7285 9.49516 30.0921 10.3574 29.9828 11.0527L29.9546 11.1894L29.0084 14.6781C28.8348 15.3511 28.0883 15.9282 27.3084 15.9938L27.1619 16H18.8519L19.8686 12.2728H24.8772C25.2464 12.2728 25.5232 12.0346 25.5925 11.8178C25.6756 11.5644 25.6278 11.3636 25.3483 11.1522L25.2464 11.0812L18.5995 6.92095C17.9719 6.53476 17.6081 5.67281 17.7173 4.97743L17.7455 4.84076L18.6914 1.33023C18.8654 0.657352 19.5912 0.0802618 20.3495 0.0146972L20.492 0.00849999L30.0218 0H30.028ZM34.8758 0L39.0028 0.00849999L34.6207 16H30.4473L34.8566 0.00849999H34.8735L34.8758 0ZM17.698 12.2956L16.6916 16H16.0205L17.0206 12.2956H17.698ZM16.356 12.2956L15.313 16H14.5946L15.6471 12.3028L15.6493 12.2956H16.356ZM19.124 12.2956L18.0887 16H17.3625L18.398 12.2956H19.124ZM12.2017 3.70443H7.46927L6.45853 7.48768L12.0409 4.81988C12.5006 4.60106 12.6614 4.33872 12.7304 4.12006C12.8222 3.83596 12.5694 3.70443 12.2017 3.70443ZM34.1379 0L33.1305 3.70443H32.4604L33.474 0H34.1379ZM32.712 0L31.7062 3.70443H31.0345L32.0511 0H32.712ZM31.3537 0L31.3515 0.00844828H31.37L30.3313 3.69121L30.3277 3.70443H29.6086L29.6121 3.69121L30.6322 0.00844828L30.6346 0H31.3537Z">
-                        </path>
-                        <path fill-rule="evenodd" clip-rule="evenodd"
-                            d="M44.0993 0.5C45.1052 0.5 45.71 0.718656 46.0714 1.07635C46.4317 1.43287 46.6502 2.02678 46.6502 3.01365C46.6502 4.00008 46.4317 4.58521 46.0739 4.93447C45.7133 5.28641 45.1085 5.5 44.0993 5.5C43.0905 5.5 42.4701 5.28657 42.0962 4.9303C41.7277 4.57908 41.5 3.99382 41.5 3.01365C41.5 2.03297 41.7277 1.43898 42.0987 1.08055C42.4734 0.718531 43.0938 0.5 44.0993 0.5ZM47.1502 3.01365C47.1502 0.918004 46.2283 0 44.0993 0C41.9703 0 41 0.918004 41 3.01365C41 5.10816 41.9703 6 44.0993 6C46.2283 6 47.1502 5.10816 47.1502 3.01365ZM42.7675 1.363C43.2445 1.318 43.717 1.3 44.194 1.3C45.157 1.3 45.4855 1.633 45.4855 2.5105C45.4855 3.154 45.319 3.4555 44.842 3.577L45.607 4.7965C45.643 4.846 45.6205 4.8865 45.553 4.8865H44.725C44.6215 4.8865 44.59 4.855 44.545 4.7875L43.816 3.6355H43.645V4.8145C43.645 4.873 43.6315 4.8865 43.5775 4.8865H42.7675C42.7135 4.8865 42.7 4.873 42.7 4.8145V1.4215C42.7 1.381 42.7135 1.3675 42.7675 1.363ZM44.527 2.542C44.527 2.2495 44.428 2.1235 44.0905 2.1235H43.645V2.9425H44.0905C44.428 2.9425 44.527 2.839 44.527 2.542Z">
-                        </path>
+        <!-- Logged In -->
+        <div class="user-bar-content hidden" id="user-card">
+            <img class="user-avatar" id="user-avatar" src="" alt="">
+            <div class="user-info">
+                <div class="user-name" id="user-name">-</div>
+                <div class="user-credits">AI翻译额度: <span id="credits-percent">-</span></div>
+            </div>
+            <button class="btn-small btn-logout" id="logout-btn">登出</button>
+        </div>
+
+        <!-- Not Logged In -->
+        <div class="login-bar hidden" id="login-prompt">
+            <span class="login-text">登录使用 AI 实时翻译</span>
+            <button class="btn-small btn-login" id="login-btn">登录</button>
+        </div>
+    </div>
+
+    <!-- Content -->
+    <div class="content">
+        <!-- Quick Links -->
+        <div class="section-title">快速链接</div>
+        <div class="link-list">
+            <a href="https://robertsspaceindustries.com/" target="_blank" class="link-item">
+                <div class="link-icon">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
                     </svg>
                 </div>
-                <div class="card-content">
-                    <div class="card-title">星际公民官网</div>
-                    <div class="card-description">罗伯茨航天工业公司，万物的起源</div>
+                <div class="link-text">
+                    <div class="link-title">RSI 官网</div>
+                    <div class="link-desc">罗伯茨航天工业</div>
                 </div>
-                <svg class="card-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                    stroke-width="2">
-                    <path d="M9 18l6-6-6-6" />
-                </svg>
+            </a>
+            <a href="https://uexcorp.space" target="_blank" class="link-item">
+                <div class="link-icon">
+                    <img src="https://assets.uexcorp.space/img/logo.svg" loading="lazy" alt="">
+                </div>
+                <div class="link-text">
+                    <div class="link-title">UEX</div>
+                    <div class="link-desc">采矿、贸易、价格信息</div>
+                </div>
+            </a>
+            <a href="https://www.erkul.games/live/calculator" target="_blank" class="link-item">
+                <div class="link-icon">
+                    <img src="https://www.erkul.games/assets/icons/icon-512x512.png" loading="lazy" alt="">
+                </div>
+                <div class="link-text">
+                    <div class="link-title">DPS 计算器</div>
+                    <div class="link-desc">改船、伤害数值</div>
+                </div>
+            </a>
+            <a href="https://ccugame.app" target="_blank" class="link-item">
+                <div class="link-icon">
+                    <img src="https://ccugame.app/assets/images/logo/logo.png" loading="lazy" alt="">
+                </div>
+                <div class="link-text">
+                    <div class="link-title">CCUGame</div>
+                    <div class="link-desc">资产管理、舰队规划</div>
+                </div>
             </a>
         </div>
 
-        <div class="card">
-            <a href="https://uexcorp.space" target="_blank">
-                <div class="card-icon">
-                    <img src="https://assets.uexcorp.space/img/logo.svg" loading="lazy" alt="UEX">
-                </div>
-                <div class="card-content">
-                    <div class="card-title">UEX</div>
-                    <div class="card-description">采矿、精炼、贸易计算器、价格、船信息</div>
-                </div>
-                <svg class="card-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                    stroke-width="2">
-                    <path d="M9 18l6-6-6-6" />
-                </svg>
-            </a>
-        </div>
-
-        <div class="card">
-            <a href="https://www.erkul.games/live/calculator" target="_blank">
-                <div class="card-icon">
-                    <img src="https://www.erkul.games/assets/icons/icon-512x512.png" loading="lazy"
-                        alt="DPS Calculator">
-                </div>
-                <div class="card-content">
-                    <div class="card-title">DPS 计算器</div>
-                    <div class="card-description">在线改船，查询伤害数值和配件购买地点</div>
-                </div>
-                <svg class="card-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                    stroke-width="2">
-                    <path d="M9 18l6-6-6-6" />
-                </svg>
-            </a>
-        </div>
-
-        <div class="card">
-            <a href="https://ccugame.app" target="_blank">
-                <div class="card-icon">
-                    <img src="https://ccugame.app/assets/images/logo/logo.png" loading="lazy" alt="CCUGame">
-                </div>
-                <div class="card-content">
-                    <div class="card-title">CCUGame（官方汉化）</div>
-                    <div class="card-description">资产管理和舰队规划，一定要理性消费.jpg</div>
-                </div>
-                <svg class="card-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                    stroke-width="2">
-                    <path d="M9 18l6-6-6-6" />
-                </svg>
-            </a>
-        </div>
-
-        <!-- Cache Management Section -->
+        <!-- Cache Section -->
+        <div class="section-title">翻译缓存</div>
         <div class="cache-section">
-            <div class="section-header">
-                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path
-                        d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
-                </svg>
-                <h2>翻译缓存</h2>
-            </div>
-
-            <div class="cache-stats">
-                <div class="cache-total">
-                    <span class="cache-total-label">缓存总数</span>
-                    <span class="cache-total-value" id="cache-total-count">-</span>
-                </div>
-
-                <div class="cache-domains" id="cache-domains-list">
-                    <div class="loading">
-                        <div class="loading-spinner"></div>
-                        加载中...
-                    </div>
+            <div class="cache-header">
+                <span class="cache-total">共 <strong id="cache-total-count">-</strong> 条</span>
+                <div class="cache-actions">
+                    <button class="cache-btn cache-btn-refresh" id="refresh-cache-btn">刷新</button>
+                    <button class="cache-btn cache-btn-clear" id="clear-all-cache-btn">清空</button>
                 </div>
             </div>
-
-            <div class="cache-actions">
-                <button class="btn btn-primary" id="refresh-cache-btn">
-                    刷新
-                </button>
-                <button class="btn btn-danger" id="clear-all-cache-btn">
-                    清空全部
-                </button>
+            <div class="cache-list" id="cache-domains-list">
+                <div class="empty-state">加载中...</div>
             </div>
         </div>
     </div>
@@ -514,7 +485,6 @@
     <div class="toast" id="toast"></div>
 
     <script src="popup.js"></script>
-
 </body>
 
 </html>

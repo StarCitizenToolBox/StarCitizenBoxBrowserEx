@@ -16,7 +16,8 @@
   ],
   "permissions": [
     "storage",
-    "contextMenus"
+    "contextMenus",
+    "identity"
   ],
   "action": {
     "default_popup": "popup.html"
@@ -37,6 +38,15 @@
       ],
       "js": [
         "core.ts"
+      ],
+      "run_at": "document_end"
+    },
+    {
+      "matches": [
+        "http://localhost:8066/api/v1/auth/callback*"
+      ],
+      "js": [
+        "oidc-callback-content-script.ts"
       ],
       "run_at": "document_end"
     }

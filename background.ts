@@ -1,6 +1,25 @@
+// Import auth module
+import { getAccessToken, fetchUserProfile, fetchUserCredits, isLoggedIn, initiateLogin, logout, getCachedUserProfile, USER_PROFILE_STORAGE_KEY, handleAuthCode } from './auth';
+
+
+
 // Configuration
 const TRANSLATE_API_BASE_URL = "http://localhost:8066/api/v1";
 const CACHE_MAX_SIZE = 100000;
+
+// Helper function to get authorization headers
+async function getAuthHeaders(): Promise<Record<string, string>> {
+    const token = await getAccessToken();
+    const headers: Record<string, string> = {
+        'Content-Type': 'application/json'
+    };
+
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    return headers;
+}
 
 interface CacheStats {
     domain: string;
@@ -188,11 +207,10 @@ async function setCachedTranslationsBatch(domain: string, entries: TranslationCa
 
 async function translateViaFastApi(texts: string[], domain: string, use_llm: boolean = false): Promise<FastTranslateApiResponse | null> {
     try {
-        const response = await fetch(`${TRANSLATE_API_BASE_URL}/translate/fast`, {
+        const headers = await getAuthHeaders();
+        const response = await fetch(`${TRANSLATE_API_BASE_URL}/translate/batch`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers: headers,
             body: JSON.stringify({
                 texts: texts,
                 source_lang: 'en',
@@ -215,11 +233,10 @@ async function translateViaFastApi(texts: string[], domain: string, use_llm: boo
 
 async function translateViaApi(text: string, domain: string, output_terms: boolean = false): Promise<TranslateApiResponse | null> {
     try {
+        const headers = await getAuthHeaders();
         const response = await fetch(`${TRANSLATE_API_BASE_URL}/translate`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers: headers,
             body: JSON.stringify({
                 text: text,
                 source_lang: 'en',
@@ -470,6 +487,62 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
         // Load cache to memory and return it
         loadCacheToMemory(request.domain).then(cache => {
             sendResponse({ cache });
+        });
+    } else if (request.action === "_handleAuthCode") {
+        // Handle auth code from callback page (legacy)
+        handleAuthCode(request.code, request.state).then((success) => {
+            sendResponse({ success });
+        }).catch((error) => {
+            console.error('Auth code handling failed:', error);
+            sendResponse({ success: false, error: error.message });
+        });
+    } else if (request.type === "OIDC_CALLBACK") {
+        // Handle OIDC callback from content script on localhost callback page
+        handleAuthCode(request.code, request.state).then((success) => {
+            sendResponse({ success });
+        }).catch((error) => {
+            console.error('OIDC callback handling failed:', error);
+            sendResponse({ success: false, error: error.message });
+        });
+    } else if (request.action === "_userLogin") {
+        // Initiate OIDC login flow
+        initiateLogin().then(() => {
+            sendResponse({ success: true });
+        }).catch((error) => {
+            console.error('Login initiation failed:', error);
+            sendResponse({ success: false, error: error.message });
+        });
+    } else if (request.action === "_userLogout") {
+        // Logout user
+        logout().then(() => {
+            sendResponse({ success: true });
+        });
+    } else if (request.action === "_checkLoginStatus") {
+        // Check if user is logged in
+        isLoggedIn().then(loggedIn => {
+            sendResponse({ loggedIn });
+        });
+    } else if (request.action === "_getUserProfile") {
+        // Get user profile
+        getCachedUserProfile().then(async (profile) => {
+            if (!profile) {
+                // Try to fetch from API
+                profile = await fetchUserProfile();
+            }
+            sendResponse({ profile });
+        });
+    } else if (request.action === "_getUserCredits") {
+        // Get user credits
+        fetchUserCredits(TRANSLATE_API_BASE_URL).then(credits => {
+            sendResponse({ credits });
+        });
+    } else if (request.action === "_refreshUserProfile") {
+        // Refresh user profile from API
+        fetchUserProfile().then(profile => {
+            if (profile) {
+                chrome.storage.local.set({ [USER_PROFILE_STORAGE_KEY]: profile });
+            }
+            sendResponse({ profile });
         });
     }
     return true;
