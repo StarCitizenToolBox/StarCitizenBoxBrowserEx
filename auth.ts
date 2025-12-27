@@ -3,7 +3,7 @@
  * Handles SCToolbox OIDC authentication flow for the browser extension
  */
 
-const API_BASE_URL = "http://localhost:8066/api/v1";
+const API_BASE_URL = "https://ecdn.translate-manager.scbox.xkeyc.cn/api/v1";
 
 // Storage keys
 const TOKEN_STORAGE_KEY = 'sctoolbox_access_token';

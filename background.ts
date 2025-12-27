@@ -4,7 +4,7 @@ import { getAccessToken, fetchUserProfile, fetchUserCredits, isLoggedIn, initiat
 
 
 // Configuration
-const TRANSLATE_API_BASE_URL = "http://localhost:8066/api/v1";
+const TRANSLATE_API_BASE_URL = "https://ecdn.translate-manager.scbox.xkeyc.cn/api/v1";
 const CACHE_MAX_SIZE = 100000;
 
 // Helper function to get authorization headers
