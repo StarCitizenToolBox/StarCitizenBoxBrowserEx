@@ -189,6 +189,11 @@ function shouldSkipElement(element: Element): boolean {
         }
     }
 
+    // Skip <i> elements that are used as icons (empty or only whitespace content)
+    if (element.tagName === 'I' && !element.textContent?.trim()) {
+        return true;
+    }
+
     if (element.getAttribute('translate') === 'no') return true;
     if (element.hasAttribute('contenteditable')) return true;
     if (element.hasAttribute('hidden') || element.getAttribute('aria-hidden') === 'true') {

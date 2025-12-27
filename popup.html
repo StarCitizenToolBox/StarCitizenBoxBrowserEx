@@ -104,6 +104,9 @@
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .user-credits {
@@ -133,6 +136,8 @@
             background: transparent;
             color: var(--text-muted);
             border: 1px solid var(--border);
+            padding: 1px 6px;
+            font-size: 10px;
         }
 
         .btn-login {
@@ -386,6 +391,33 @@
         .hidden {
             display: none !important;
         }
+
+        .tip-text {
+            font-size: 10px;
+            color: var(--text-muted);
+            margin-top: 2px;
+            line-height: 1.2;
+        }
+
+        .notice-box {
+            padding: 10px;
+            background: var(--bg-card);
+            border-radius: 6px;
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+            line-height: 1.4;
+            border-left: 3px solid var(--accent);
+        }
+
+        .notice-link {
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        .notice-link:hover {
+            text-decoration: underline;
+        }
     </style>
 </head>
 
@@ -404,19 +436,21 @@
             <span>加载中...</span>
         </div>
 
-        <!-- Logged In -->
         <div class="user-bar-content hidden" id="user-card">
             <img class="user-avatar" id="user-avatar" src="" alt="">
             <div class="user-info">
-                <div class="user-name" id="user-name">-</div>
+                <div class="user-name">
+                    <span id="user-name">-</span>
+                    <button class="btn-small btn-logout" id="logout-btn">登出</button>
+                </div>
                 <div class="user-credits">AI翻译额度: <span id="credits-percent">-</span></div>
+                <div class="tip-text">所有翻译内容均被服务器缓存，命中缓存不消耗额度</div>
             </div>
-            <button class="btn-small btn-logout" id="logout-btn">登出</button>
         </div>
 
         <!-- Not Logged In -->
         <div class="login-bar hidden" id="login-prompt">
-            <span class="login-text">登录使用 AI 实时翻译</span>
+            <span class="login-text">登录以使用 AI 实时翻译权限</span>
             <button class="btn-small btn-login" id="login-btn">登录</button>
         </div>
     </div>
@@ -453,19 +487,34 @@
                     <div class="link-desc">改船、伤害数值</div>
                 </div>
             </a>
-            <a href="https://ccugame.app" target="_blank" class="link-item">
+            <a href="https://www.spviewer.eu/" target="_blank" class="link-item">
                 <div class="link-icon">
-                    <img src="https://ccugame.app/assets/images/logo/logo.png" loading="lazy" alt="">
+                    <img src="https://www.spviewer.eu/favicon/favicon-32x32.png" loading="lazy" alt="">
                 </div>
                 <div class="link-text">
-                    <div class="link-title">CCUGame</div>
-                    <div class="link-desc">资产管理、舰队规划</div>
+                    <div class="link-title">SPViewer</div>
+                    <div class="link-desc">舰船性能、数据查询</div>
+                </div>
+            </a>
+            <a href="https://sc-trade.tools/" target="_blank" class="link-item">
+                <div class="link-icon">
+                    <img src="https://sc-trade.tools/assets/icons/icon96.png" loading="lazy" alt="">
+                </div>
+                <div class="link-text">
+                    <div class="link-title">SC Trade Tools</div>
+                    <div class="link-desc">贸易线路、跑商盈利查询</div>
                 </div>
             </a>
         </div>
 
+        <div class="notice-box">
+            AI 可能会出错，所有翻译内容仅供参考。更多网站正在适配中，欢迎提交<a href="https://support.citizenwiki.cn/t/sc-toolbox" target="_blank"
+                class="notice-link">反馈</a>
+        </div>
+
+
         <!-- Cache Section -->
-        <div class="section-title">翻译缓存</div>
+        <div class="section-title">本地缓存</div>
         <div class="cache-section">
             <div class="cache-header">
                 <span class="cache-total">共 <strong id="cache-total-count">-</strong> 条</span>
